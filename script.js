@@ -1565,14 +1565,16 @@ function displaySavedInputs() {
 function showResult(applicationData = null) {
     const resultSection = document.getElementById('result');
     const resultContent = document.getElementById('resultContent');
-    
+    const promotionFlyer = document.getElementById('promotionFlyer');
+    const resultActions = document.getElementById('resultActions');
+
     if (applicationData) {
         // Supabase 컬럼명 submittedAt 우선 사용
         const submittedIso = applicationData.submittedAt || applicationData.submitted_at || new Date().toISOString();
         const submittedDate = new Date(submittedIso);
         const formattedDate = submittedDate.toLocaleDateString('ko-KR', {
             year: 'numeric',
-            month: 'long', 
+            month: 'long',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
@@ -1597,6 +1599,27 @@ function showResult(applicationData = null) {
                 </div>
             </div>
         `;
+
+        // workType에 따른 조건부 UI 표시
+        const workType = applicationData.workType || applicationData.work_type;
+        console.log('WorkType 확인:', workType);
+
+        if (workType === 'interior') { // KT
+            // KT 선택 시: 버튼들 표시, 전단지 숨김
+            resultActions.style.display = 'block';
+            promotionFlyer.style.display = 'none';
+            console.log('KT 선택 - 버튼 표시, 전단지 숨김');
+        } else if (workType === 'exterior' || workType === 'plumbing' || workType === 'electrical') {
+            // SKT, LGU+, 기타(지역방송) 선택 시: 버튼들 숨김, 전단지 표시
+            resultActions.style.display = 'none';
+            promotionFlyer.style.display = 'block';
+            console.log('KT가 아닌 통신사 선택 - 버튼 숨김, 전단지 표시');
+        } else {
+            // 기본값: 버튼들 표시 (이전 동작 유지)
+            resultActions.style.display = 'block';
+            promotionFlyer.style.display = 'none';
+            console.log('기본값 - 버튼 표시');
+        }
     } else {
         resultContent.innerHTML = `
             <div class="result-info">
@@ -1605,12 +1628,16 @@ function showResult(applicationData = null) {
                 <p>관리자가 검토 후 연락드리겠습니다.</p>
             </div>
         `;
+
+        // 데이터가 없는 경우 기본값으로 버튼 표시
+        resultActions.style.display = 'block';
+        promotionFlyer.style.display = 'none';
     }
-    
+
     // 폼 숨기고 결과 표시
     document.getElementById('applicationForm').style.display = 'none';
     resultSection.style.display = 'block';
-    
+
     console.log('결과 페이지 표시:', applicationData);
 }
 
