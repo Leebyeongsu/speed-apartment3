@@ -69,6 +69,33 @@ php -S localhost:8000
 
 ## ⚙️ 설정
 
+### ⚠️ 새로운 아파트 설정 시 필수 작업
+
+**새로운 아파트 단지를 위한 공사 요청서를 만들 때는 반드시 다음 작업을 수행해야 합니다:**
+
+1. **Supabase admin_settings 테이블에 새로운 레코드 생성**
+   ```sql
+   INSERT INTO admin_settings (apartment_id, title, subtitle, phones, emails)
+   VALUES (
+       'speed_apartment3',  -- 새로운 아파트 고유 ID
+       'Speed 아파트 3단지 통신 환경 개선 신청서',  -- 제목
+       '신청서를 작성하여 제출해 주세요',  -- 부제목
+       ARRAY['010-1234-5678'],  -- 관리자 전화번호 배열
+       ARRAY['admin@speed-apt.com']  -- 관리자 이메일 배열
+   );
+   ```
+
+2. **script.js의 APARTMENT_ID 변경**
+   ```javascript
+   const APARTMENT_ID = 'speed_apartment3';  // 새로운 아파트 ID로 변경
+   ```
+
+3. **HTML 제목 및 메타데이터 업데이트**
+   - `index.html`의 title, og:title, og:description 수정
+   - 메인 헤더 제목 수정
+
+> **⚠️ 중요**: admin_settings 테이블에 해당 apartment_id가 없으면 관리자 설정을 불러올 수 없어 이메일/SMS 알림이 작동하지 않습니다.
+
 ### 필수 설정 (`script.js`)
 ```javascript
 // 아파트 고유 식별자 설정
