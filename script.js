@@ -1,7 +1,7 @@
 // Supabase 설정은 supabase-config.js에서 전역 변수로 제공됨
 
-// 아파트 ID 설정 (고유 식별자) - speed_apartment2로 변경
-const APARTMENT_ID = 'speed_apartment2';
+// 아파트 ID 설정 (고유 식별자) - speed_apartment3로 변경
+const APARTMENT_ID = 'speed_apartment3';
 
 // 카카오 SDK 초기화 (실제 앱키로 변경 필요)
 try {
@@ -607,7 +607,7 @@ async function sendEmailToAdmins(applicationData) {
 
                 const templateParams = {
                     to_email: adminEmail,
-                    apartment_name: 'Speed 아파트',
+                    apartment_name: 'Speed 아파트 3단지',
                     application_number: emailAppNumber,
                     name: applicationData.name,
                     phone: applicationData.phone,
@@ -802,7 +802,7 @@ async function sendNotificationsViaEdgeFunction(applicationData) {
                     'template_pxi385c',
                     {
                         to_email: email,
-                        apartment_name: 'Speed 아파트',
+                        apartment_name: 'Speed 아파트 3단지',
                         application_number: emailAppNum,
                         name: applicationData.name,
                         phone: applicationData.phone,
@@ -824,7 +824,7 @@ async function sendNotificationsViaEdgeFunction(applicationData) {
                 console.error(`❌ ${email}로 EmailJS 개별 발송 실패:`, error);
                 console.error('📋 실패한 이메일 파라미터:', {
                     to_email: email,
-                    apartment_name: 'Speed 아파트',
+                    apartment_name: 'Speed 아파트 3단지',
                     application_number: emailAppNum,
                     name: applicationData.name,
                     phone: applicationData.phone,
