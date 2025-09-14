@@ -105,6 +105,11 @@ let formData = {};
 let currentQRDataURL = null;
 let adminSettings = null; // 관리자 설정 캐시
 
+// 공통 이메일 주소 정제 함수
+function sanitizeEmailAddresses(emailsRaw) {
+    return Array.from(new Set((emailsRaw || []).map(e => (e || '').toString().trim()))).filter(Boolean).slice(0, 3);
+}
+
 // 안전한 logEmailAttempt 전역 래퍼 (notification-service 모듈이 로드되지 않은 환경 방어)
 if (typeof window !== 'undefined' && typeof window.logEmailAttempt !== 'function') {
     window.logEmailAttempt = async function(applicationId, provider, status, error = null) {
@@ -145,7 +150,7 @@ async function saveAdminSettingsToCloud() {
         }
 
         const settings = {
-            apartment_id: APARTMENT_ID,  // speed_apartment2 사용
+            apartment_id: APARTMENT_ID,  // speed_apartment3 사용
             title: localStorage.getItem('mainTitle') || '',
             phones: JSON.parse(localStorage.getItem('savedPhoneNumbers') || '[]'),
             emails: JSON.parse(localStorage.getItem('savedEmailAddresses') || '[]'),
@@ -184,7 +189,7 @@ async function loadAdminSettingsFromCloud() {
         const { data, error } = await supabase
             .from('admin_settings')
             .select('*')
-            .eq('apartment_id', APARTMENT_ID)  // speed_apartment2 조건으로 검색
+            .eq('apartment_id', APARTMENT_ID)  // speed_apartment3 조건으로 검색
             .single();
         
         if (error && error.code !== 'PGRST116') { // 데이터가 없는 경우가 아닌 실제 오류
@@ -497,9 +502,7 @@ async function sendEmailToAdmins(applicationData) {
 
     // 저장된 관리자 이메일 주소 가져오기
     const savedEmailsRaw = JSON.parse(localStorage.getItem('savedEmailAddresses') || '[]');
-    // 중복 제거, 공백 제거, 최대 3개 제한
-    const savedEmails = Array.from(new Set((savedEmailsRaw || []).map(e => (e || '').toString().trim()))).filter(Boolean).slice(0, 3);
-    console.log('DEBUG sendEmailToAdmins - savedEmailsRaw:', savedEmailsRaw, '=> filtered:', savedEmails);
+    const savedEmails = sanitizeEmailAddresses(savedEmailsRaw);
 
         if (savedEmails.length === 0) {
             console.warn('⚠️ 저장된 관리자 이메일 주소가 없습니다.');
@@ -758,7 +761,7 @@ async function sendNotificationsViaEdgeFunction(applicationData) {
         const { data: adminCheck, error: adminError } = await supabase
             .from('admin_settings')
             .select('emails')
-            .eq('apartment_id', APARTMENT_ID)  // speed_apartment2로 검색
+            .eq('apartment_id', APARTMENT_ID)  // speed_apartment3로 검색
             .single();
 
         if (adminError || !adminCheck?.emails || adminCheck.emails.length === 0) {
@@ -766,12 +769,8 @@ async function sendNotificationsViaEdgeFunction(applicationData) {
             throw new Error('관리자 이메일 설정을 찾을 수 없습니다.');
         }
 
-        // 관리자 이메일 목록 정리: 중복 제거, 공백 제거, 최대 3개 제한
-        const adminEmails = Array.isArray(adminCheck.emails)
-            ? Array.from(new Set(adminCheck.emails.map(e => (e || '').toString().trim()))).filter(Boolean).slice(0, 3)
-            : [];
-
-    console.log('DEBUG sendNotificationsViaEdgeFunction - adminCheck.emails (raw):', adminCheck.emails, '=> filtered adminEmails:', adminEmails);
+        // 관리자 이메일 목록 정리
+        const adminEmails = Array.isArray(adminCheck.emails) ? sanitizeEmailAddresses(adminCheck.emails) : [];
 
         // EmailJS로 메일 발송
         const results = await Promise.all(adminEmails.map(async (email) => {
