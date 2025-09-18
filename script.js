@@ -1943,6 +1943,7 @@ async function addNewApartment() {
             .from('admin_settings')
             .insert([
                 {
+                    id: apartmentId,
                     apartment_id: apartmentId,
                     title: finalTitle,
                     subtitle: finalSubtitle,
