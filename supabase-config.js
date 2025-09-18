@@ -46,12 +46,15 @@ function initializeSupabase() {
             
             // Supabase 클라이언트 생성
             supabase = createClient(supabaseUrl, supabaseAnonKey);
-            
+
             console.log('✅ Supabase 클라이언트 초기화 성공:', supabase);
-            
+
+            // 전역 변수로 즉시 설정
+            window.supabaseClient = supabase;
+
             // 연결 테스트
             testSupabaseConnection();
-            
+
             return supabase;
         } else {
             console.error('❌ Supabase createClient 함수를 찾을 수 없습니다.');

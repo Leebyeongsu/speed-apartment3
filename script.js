@@ -1849,6 +1849,160 @@ window.generatePageQR = generatePageQR;
 window.deleteQR = deleteQR;
 window.hideQRSection = hideQRSection;
 window.downloadQR = downloadQR;
+
+// 아파트 추가 관련 함수들을 전역으로 노출
+window.showAddApartmentModal = showAddApartmentModal;
+window.closeAddApartmentModal = closeAddApartmentModal;
+window.addNewApartment = addNewApartment;
+
+// 아파트 추가 모달 표시 함수
+function showAddApartmentModal() {
+    console.log('🏢 아파트 추가 모달 열기');
+    const modal = document.getElementById('addApartmentModal');
+    if (modal) {
+        modal.style.display = 'block';
+
+        // 폼 필드 초기화
+        document.getElementById('apartmentName').value = '';
+        document.getElementById('apartmentId').value = '';
+        document.getElementById('apartmentTitle').value = '';
+        document.getElementById('apartmentSubtitle').value = '';
+
+        // 첫 번째 입력 필드에 포커스
+        document.getElementById('apartmentName').focus();
+    } else {
+        console.error('❌ addApartmentModal 요소를 찾을 수 없습니다.');
+    }
+}
+
+// 아파트 추가 모달 닫기 함수
+function closeAddApartmentModal() {
+    console.log('🚪 아파트 추가 모달 닫기');
+    const modal = document.getElementById('addApartmentModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// 새 아파트 추가 메인 함수
+async function addNewApartment() {
+    console.log('🏗️ 새 아파트 추가 프로세스 시작');
+
+    try {
+        // 입력값 수집 및 검증
+        const apartmentName = document.getElementById('apartmentName').value.trim();
+        const apartmentId = document.getElementById('apartmentId').value.trim();
+        const apartmentTitle = document.getElementById('apartmentTitle').value.trim();
+        const apartmentSubtitle = document.getElementById('apartmentSubtitle').value.trim();
+
+        console.log('📋 입력값:', {
+            name: apartmentName,
+            id: apartmentId,
+            title: apartmentTitle,
+            subtitle: apartmentSubtitle
+        });
+
+        // 필수 필드 검증
+        if (!apartmentName || !apartmentId) {
+            alert('❌ 아파트 이름과 ID는 필수입니다.');
+            return;
+        }
+
+        // ID 형식 검증 (영문 소문자, 숫자, 밑줄만 허용)
+        const idPattern = /^[a-z0-9_]+$/;
+        if (!idPattern.test(apartmentId)) {
+            alert('❌ 아파트 ID는 영문 소문자, 숫자, 밑줄(_)만 사용 가능합니다.\n예: speed_apartment4, apt_complex_1');
+            document.getElementById('apartmentId').focus();
+            return;
+        }
+
+        // Supabase 클라이언트 확인 및 초기화
+        console.log('🔄 Supabase 연결 상태 확인...');
+        let supabaseClient = window.supabaseClient;
+
+        if (!supabaseClient) {
+            console.log('🔧 Supabase 클라이언트가 없음. 초기화 시도...');
+            if (typeof window.initializeSupabase === 'function') {
+                supabaseClient = await window.initializeSupabase();
+                if (!supabaseClient) {
+                    throw new Error('Supabase 초기화에 실패했습니다.');
+                }
+            } else {
+                throw new Error('Supabase 초기화 함수를 찾을 수 없습니다.');
+            }
+        }
+
+        // 기본값 설정
+        const finalTitle = apartmentTitle || `${apartmentName} 통신 환경 개선 신청서`;
+        const finalSubtitle = apartmentSubtitle || '신청서를 작성하여 제출해 주세요';
+
+        console.log('💾 Supabase에 데이터 삽입 중...');
+
+        // Supabase에 새 아파트 데이터 삽입
+        const { data, error } = await supabaseClient
+            .from('admin_settings')
+            .insert([
+                {
+                    apartment_id: apartmentId,
+                    title: finalTitle,
+                    subtitle: finalSubtitle,
+                    phones: [],
+                    emails: []
+                }
+            ])
+            .select();
+
+        if (error) {
+            console.error('❌ Supabase 삽입 오류:', error);
+
+            // 중복 키 오류 특별 처리
+            if (error.message && (error.message.includes('duplicate') || error.message.includes('unique'))) {
+                alert(`❌ 이미 존재하는 아파트 ID입니다: ${apartmentId}\n다른 ID를 사용해주세요.`);
+                document.getElementById('apartmentId').focus();
+                return;
+            }
+
+            throw error;
+        }
+
+        console.log('✅ 새 아파트 추가 성공:', data);
+
+        // 성공 메시지와 URL 정보 제공
+        const newApartmentUrl = `${window.location.origin}${window.location.pathname}?apartment=${apartmentId}`;
+        const customerUrl = `${window.location.origin}${window.location.pathname}?apartment=${apartmentId}&mode=customer`;
+
+        alert(`✅ ${apartmentName}이(가) 성공적으로 추가되었습니다!\n\n` +
+              `🏢 관리자 URL: ${newApartmentUrl}\n` +
+              `👤 고객용 URL: ${customerUrl}`);
+
+        // 모달 닫기
+        closeAddApartmentModal();
+
+        // 사용자에게 새 아파트로 이동할지 묻기
+        if (confirm('🔄 새로 추가된 아파트 관리 페이지로 이동하시겠습니까?')) {
+            window.location.href = `${window.location.pathname}?apartment=${apartmentId}`;
+        }
+
+    } catch (error) {
+        console.error('💥 아파트 추가 중 오류 발생:', error);
+
+        // 사용자 친화적 오류 메시지
+        let userMessage = '아파트 추가 중 오류가 발생했습니다.';
+
+        if (error.message) {
+            if (error.message.includes('network') || error.message.includes('fetch')) {
+                userMessage += '\n네트워크 연결을 확인해주세요.';
+            } else if (error.message.includes('permission') || error.message.includes('unauthorized')) {
+                userMessage += '\n권한이 부족합니다. 관리자에게 문의하세요.';
+            } else {
+                userMessage += `\n상세 오류: ${error.message}`;
+            }
+        }
+
+        alert(`❌ ${userMessage}`);
+    }
+}
+
 window.shareToKakao = function() {
     // 카카오톡 공유 기능
     if (typeof Kakao !== 'undefined' && Kakao.Share) {
