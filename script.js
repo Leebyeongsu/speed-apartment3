@@ -1918,7 +1918,7 @@ async function addNewApartment() {
 
         // Supabase 클라이언트 확인 및 초기화
         console.log('🔄 Supabase 연결 상태 확인...');
-        let supabaseClient = window.supabaseClient;
+        let supabaseClient = supabase;
 
         if (!supabaseClient) {
             console.log('🔧 Supabase 클라이언트가 없음. 초기화 시도...');
@@ -1928,7 +1928,16 @@ async function addNewApartment() {
                     throw new Error('Supabase 초기화에 실패했습니다.');
                 }
             } else {
-                throw new Error('Supabase 초기화 함수를 찾을 수 없습니다.');
+                // 직접 Supabase 초기화 시도
+                console.log('🔧 직접 Supabase 초기화 시도...');
+                if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                    const supabaseUrl = 'https://boorsqnfkwglzvnhtwcx.supabase.co';
+                    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvb3JzcW5ma3dnbHp2bmh0d2N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NDE3NDEsImV4cCI6MjA3MjExNzc0MX0.eU0BSY8u1b-qcx3OTgvGIW-EQHotI4SwNuWAg0eqed0';
+                    supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+                    console.log('✅ 직접 Supabase 초기화 성공');
+                } else {
+                    throw new Error('Supabase 라이브러리를 찾을 수 없습니다.');
+                }
             }
         }
 
@@ -1937,6 +1946,14 @@ async function addNewApartment() {
         const finalSubtitle = apartmentSubtitle || '신청서를 작성하여 제출해 주세요';
 
         console.log('💾 Supabase에 데이터 삽입 중...');
+        console.log('🔍 삽입할 데이터:', {
+            id: apartmentId,
+            apartment_id: apartmentId,
+            title: finalTitle,
+            subtitle: finalSubtitle,
+            phones: [],
+            emails: []
+        });
 
         // Supabase에 새 아파트 데이터 삽입
         const { data, error } = await supabaseClient
@@ -1955,14 +1972,28 @@ async function addNewApartment() {
 
         if (error) {
             console.error('❌ Supabase 삽입 오류:', error);
+            console.error('🔍 오류 상세 정보:', {
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint
+            });
 
             // 중복 키 오류 특별 처리
-            if (error.message && (error.message.includes('duplicate') || error.message.includes('unique'))) {
+            if (error.message && (error.message.includes('duplicate') || error.message.includes('unique') || error.message.includes('already exists'))) {
                 alert(`❌ 이미 존재하는 아파트 ID입니다: ${apartmentId}\n다른 ID를 사용해주세요.`);
                 document.getElementById('apartmentId').focus();
                 return;
             }
 
+            // 권한 오류 처리
+            if (error.message && (error.message.includes('permission') || error.message.includes('unauthorized'))) {
+                alert(`❌ 권한 오류: Supabase 접근 권한이 없습니다.\n관리자에게 문의하세요.`);
+                return;
+            }
+
+            // 일반 오류 처리
+            alert(`❌ 아파트 추가 실패: ${error.message || '알 수 없는 오류가 발생했습니다.'}`);
             throw error;
         }
 
