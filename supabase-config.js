@@ -111,6 +111,7 @@ if (document.readyState === 'loading') {
 CREATE TABLE admin_settings (
     id SERIAL PRIMARY KEY,
     apartment_id TEXT UNIQUE NOT NULL,
+    apartment_name TEXT,
     title TEXT,
     subtitle TEXT,
     phones TEXT[],

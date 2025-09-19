@@ -3,6 +3,9 @@
 // 아파트 ID 설정 (고유 식별자) - speed_apartment3로 변경
 const APARTMENT_ID = 'speed_apartment3';
 
+// 동적으로 로드될 아파트 이름 (기본값 설정)
+let currentApartmentName = 'Speed 아파트 3단지';
+
 // 카카오 SDK 초기화 (실제 앱키로 변경 필요)
 try {
     if (typeof Kakao !== 'undefined' && Kakao && !Kakao.isInitialized()) {
@@ -328,6 +331,9 @@ window.addEventListener('load', () => {
 
     // 폼 자동 저장 기능 설정
     setupFormAutoSave();
+    
+    // 저장된 대리점 정보 자동 표시
+    loadAndDisplayDealerInfo();
 });
 
 // 온라인 상태가 되면 재시도
@@ -524,7 +530,7 @@ async function loadAdminSettingsFromCloud() {
 
         const { data, error } = await supabase
             .from('admin_settings')
-            .select('*')
+            .select('apartment_name, title, subtitle, phones, emails')
             .eq('apartment_id', APARTMENT_ID)  // speed_apartment3 조건으로 검색
             .single();
         
@@ -539,7 +545,13 @@ async function loadAdminSettingsFromCloud() {
             if (data.title) localStorage.setItem('mainTitle', data.title);
             if (data.phones) localStorage.setItem('savedPhoneNumbers', JSON.stringify(data.phones));
             if (data.emails) localStorage.setItem('savedEmailAddresses', JSON.stringify(data.emails));
-            
+
+            // 아파트 이름이 있으면 전역 변수에 설정
+            if (data.apartment_name) {
+                currentApartmentName = data.apartment_name;
+                console.log('📍 아파트 이름 설정:', currentApartmentName);
+            }
+
             adminSettings = data;
             console.log('Supabase에서 관리자 설정을 로드했습니다.');
         } else {
@@ -946,7 +958,7 @@ async function sendEmailToAdmins(applicationData) {
 
                 const templateParams = {
                     to_email: adminEmail,
-                    apartment_name: 'Speed 아파트 3단지',
+                    apartment_name: currentApartmentName,
                     application_number: emailAppNumber,
                     name: applicationData.name,
                     phone: applicationData.phone,
@@ -2239,6 +2251,155 @@ window.generatePageQR = generatePageQR;
 window.deleteQR = deleteQR;
 window.hideQRSection = hideQRSection;
 window.downloadQR = downloadQR;
+
+// 대리점 정보 관련 함수들을 전역으로 노출
+window.showDealerInfoModal = showDealerInfoModal;
+window.closeDealerInfoModal = closeDealerInfoModal;
+window.saveDealerInfo = saveDealerInfo;
+
+// 대리점 정보 모달 표시 함수
+function showDealerInfoModal() {
+    console.log('🏢 대리점 정보 모달 열기');
+    const modal = document.getElementById('dealerInfoModal');
+    if (modal) {
+        modal.style.display = 'block';
+        
+        // 저장된 대리점 정보 불러오기
+        loadDealerInfo();
+        
+        // 첫 번째 입력 필드에 포커스
+        document.getElementById('dealerName').focus();
+    } else {
+        console.error('❌ dealerInfoModal 요소를 찾을 수 없습니다.');
+    }
+}
+
+// 대리점 정보 모달 닫기 함수
+function closeDealerInfoModal() {
+    console.log('🚪 대리점 정보 모달 닫기');
+    const modal = document.getElementById('dealerInfoModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// 대리점 정보 저장 함수
+function saveDealerInfo() {
+    console.log('💾 대리점 정보 저장 시작');
+    
+    try {
+        // 입력값 수집
+        const dealerName = document.getElementById('dealerName').value.trim();
+        const dealerCode = document.getElementById('dealerCode').value.trim().toUpperCase();
+        const apartmentName = document.getElementById('apartmentName').value.trim();
+        const entryIssue = document.getElementById('entryIssue').value.trim();
+        
+        console.log('📋 입력값:', {
+            dealerName,
+            dealerCode,
+            apartmentName,
+            entryIssue
+        });
+        
+        // 필수 필드 검증
+        if (!dealerName || !dealerCode || !apartmentName) {
+            alert('❌ 대리점 이름, 대리점 코드, 아파트 이름은 필수입니다.');
+            return;
+        }
+        
+        // 대리점 코드 형식 검증
+        const codePattern = /^[A-Z0-9]+$/;
+        if (!codePattern.test(dealerCode)) {
+            alert('❌ 대리점 코드는 영문 대문자와 숫자만 사용 가능합니다.\n예: SPEED001, ABC123');
+            document.getElementById('dealerCode').focus();
+            return;
+        }
+        
+        // 대리점 정보 객체 생성
+        const dealerInfo = {
+            dealerName: dealerName,
+            dealerCode: dealerCode,
+            apartmentName: apartmentName,
+            entryIssue: entryIssue || '특별한 진입 이슈 없음',
+            savedAt: new Date().toISOString()
+        };
+        
+        // localStorage에 저장
+        localStorage.setItem('dealerInfo', JSON.stringify(dealerInfo));
+        
+        console.log('✅ 대리점 정보 저장 완료:', dealerInfo);
+        
+        // 화면에 정보 표시
+        displayDealerInfo(dealerInfo);
+        
+        // 모달 닫기
+        closeDealerInfoModal();
+        
+        // 성공 메시지
+        alert(`✅ 대리점 정보가 저장되었습니다!\n\n🏢 ${dealerName}\n🔢 ${dealerCode}\n🏠 ${apartmentName}`);
+        
+    } catch (error) {
+        console.error('💥 대리점 정보 저장 중 오류:', error);
+        alert(`❌ 대리점 정보 저장 중 오류가 발생했습니다: ${error.message}`);
+    }
+}
+
+// 저장된 대리점 정보 불러오기 함수
+function loadDealerInfo() {
+    try {
+        const savedInfo = localStorage.getItem('dealerInfo');
+        if (savedInfo) {
+            const dealerInfo = JSON.parse(savedInfo);
+            
+            // 폼 필드에 값 설정
+            document.getElementById('dealerName').value = dealerInfo.dealerName || '';
+            document.getElementById('dealerCode').value = dealerInfo.dealerCode || '';
+            document.getElementById('apartmentName').value = dealerInfo.apartmentName || '';
+            document.getElementById('entryIssue').value = dealerInfo.entryIssue || '';
+            
+            console.log('📂 저장된 대리점 정보 불러오기 완료:', dealerInfo);
+        }
+    } catch (error) {
+        console.error('❌ 대리점 정보 불러오기 실패:', error);
+    }
+}
+
+// 대리점 정보 화면 표시 함수
+function displayDealerInfo(dealerInfo) {
+    const displayArea = document.getElementById('dealerInfoDisplay');
+    if (displayArea) {
+        // 관리자 모드에서만 표시
+        const urlParams = new URLSearchParams(window.location.search);
+        const isCustomerMode = urlParams.has('customer') || urlParams.has('apply') || urlParams.get('mode') === 'customer';
+        
+        if (!isCustomerMode) {
+            // 정보 업데이트
+            document.getElementById('displayDealerName').textContent = dealerInfo.dealerName || '-';
+            document.getElementById('displayDealerCode').textContent = dealerInfo.dealerCode || '-';
+            document.getElementById('displayApartmentName').textContent = dealerInfo.apartmentName || '-';
+            document.getElementById('displayEntryIssue').textContent = dealerInfo.entryIssue || '-';
+            
+            // 표시 영역 보이기
+            displayArea.style.display = 'block';
+            
+            console.log('📱 대리점 정보 화면 표시 완료');
+        }
+    }
+}
+
+// 페이지 로드 시 저장된 대리점 정보 자동 로드 및 표시
+function loadAndDisplayDealerInfo() {
+    try {
+        const savedInfo = localStorage.getItem('dealerInfo');
+        if (savedInfo) {
+            const dealerInfo = JSON.parse(savedInfo);
+            displayDealerInfo(dealerInfo);
+            console.log('🔄 페이지 로드 시 대리점 정보 자동 표시 완료');
+        }
+    } catch (error) {
+        console.error('❌ 페이지 로드 시 대리점 정보 표시 실패:', error);
+    }
+}
 
 // 아파트 추가 관련 함수들을 전역으로 노출
 window.showAddApartmentModal = showAddApartmentModal;
