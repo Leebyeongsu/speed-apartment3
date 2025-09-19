@@ -93,13 +93,16 @@ header p {
     .form-group select,
     .form-group textarea {
         font-size: 16px;  /* iOS에서 자동 확대 방지 */
-        padding: 15px;    /* 터치 영역 확대 */
+        padding: 16px 12px;    /* 터치 영역 확대 */
         margin-bottom: 8px;
+        min-height: 44px; /* 터치 접근성 향상 */
+        border-radius: 10px; /* 모바일에서 더 부드러운 느낌 */
     }
 
     .form-group label {
-        font-size: 14px;
-        margin-bottom: 6px;
+        font-size: 15px;
+        margin-bottom: 8px;
+        font-weight: 600;
     }
 
     /* 가상 키보드가 표시될 때 페이지 스크롤 개선 */
@@ -107,13 +110,28 @@ header p {
         max-height: 100vh;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
+        margin: 0;
+        border-radius: 0;
     }
 
-    /* 버튼 크기 최적화 */
-    button[type="submit"] {
-        min-height: 44px;  /* 터치 영역 최소 크기 */
-        padding: 12px 24px;
+    /* 모든 버튼 크기 최적화 */
+    button[type="submit"],
+    .submit-btn, .share-btn, .new-btn, .qr-btn, .download-btn, .close-btn, .sms-btn, .email-btn {
+        min-height: 48px;  /* 터치 영역 최소 크기 확대 */
+        padding: 14px 20px;
         font-size: 16px;
+        font-weight: 600;
+        border-radius: 10px;
+        touch-action: manipulation; /* 터치 응답성 향상 */
+    }
+
+    /* 드롭다운 선택기 화살표 스타일링 */
+    .form-group select {
+        background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23666' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 12px;
+        padding-right: 36px;
     }
 }
 
@@ -423,6 +441,164 @@ header p {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+
+/* 버튼 상태 스타일 */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
+    color: white !important;
+    animation: successPulse 0.6s ease-out;
+}
+
+@keyframes successPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* 네트워크 상태 알림 애니메이션 */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+}
+
+/* 네트워크 상태 표시 */
+.network-status {
+    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+
+.network-status.offline {
+    animation: slideDown 0.5s ease-out, pulse 2s infinite 1s;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+/* 폼 필드 성공 상태 */
+.form-group input.success,
+.form-group select.success,
+.form-group textarea.success {
+    border-color: #4CAF50;
+    background-color: #f8fff8;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+/* 자동 저장 알림 */
+.auto-save-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(76, 175, 80, 0.9);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.auto-save-indicator.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (max-width: 480px) {
+    .auto-save-indicator {
+        top: 10px;
+        right: 10px;
+        font-size: 11px;
+        padding: 6px 12px;
+    }
+}
+
+/* 고객 모드 전용 스타일 */
+.customer-mode-hidden {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* URL 파라미터 기반 고객 모드 감지 */
+body[data-customer-mode="true"] #adminInputSection,
+body[data-customer-mode="true"] #adminActionSection {
+    display: none !important;
+}
+
+body[data-customer-mode="true"] #customerSubmitSection {
+    display: block !important;
+}
+
+/* 고객 모드일 때 폼 액션 영역 간소화 */
+body[data-customer-mode="true"] .form-actions {
+    justify-content: center;
+    margin-top: 20px;
+}
+
+body[data-customer-mode="true"] .form-actions .submit-btn {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    padding: 16px 32px;
+    font-size: 18px;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 200px;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+body[data-customer-mode="true"] .form-actions .submit-btn:hover {
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
 .error-message {

@@ -85,21 +85,357 @@ async function initializeEmailJS() {
     });
 }
 
+// 전화번호 자동 포맷팅 함수
+function formatPhoneNumber(value) {
+    // 숫자만 추출
+    const numbers = value.replace(/[^\d]/g, '');
+
+    // 길이에 따른 포맷팅
+    if (numbers.length <= 3) {
+        return numbers;
+    } else if (numbers.length <= 7) {
+        return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    } else if (numbers.length <= 11) {
+        return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7)}`;
+    } else {
+        // 11자리 초과시 자르기
+        return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+    }
+}
+
+// 전화번호 유효성 검증 함수
+function validatePhoneNumber(phone) {
+    const numbers = phone.replace(/[^\d]/g, '');
+
+    // 한국 휴대폰 번호 패턴 (010, 011, 016, 017, 018, 019)
+    const mobilePattern = /^01[0-9]-\d{3,4}-\d{4}$/;
+    // 일반 전화번호 패턴 (02, 031~064)
+    const landlinePattern = /^(02|0[3-6][0-4])-\d{3,4}-\d{4}$/;
+
+    return numbers.length >= 10 && (mobilePattern.test(phone) || landlinePattern.test(phone));
+}
+
+// 전화번호 입력 필드에 이벤트 리스너 추가
+function setupPhoneFormatting() {
+    // 메인 폼의 전화번호 입력 필드
+    const mainPhoneInput = document.getElementById('phone');
+    if (mainPhoneInput) {
+        mainPhoneInput.addEventListener('input', function(e) {
+            const formatted = formatPhoneNumber(e.target.value);
+            e.target.value = formatted;
+
+            // 실시간 유효성 검증
+            const isValid = validatePhoneNumber(formatted);
+            if (formatted.length > 0) {
+                if (isValid) {
+                    e.target.style.borderColor = '#4CAF50';
+                    e.target.style.boxShadow = '0 0 0 2px rgba(76, 175, 80, 0.1)';
+                } else {
+                    e.target.style.borderColor = '#ff4757';
+                    e.target.style.boxShadow = '0 0 0 2px rgba(255, 71, 87, 0.1)';
+                }
+            } else {
+                e.target.style.borderColor = '#e1e5e9';
+                e.target.style.boxShadow = 'none';
+            }
+        });
+
+        // 포커스 아웃 시 유효성 메시지 표시
+        mainPhoneInput.addEventListener('blur', function(e) {
+            const phone = e.target.value.trim();
+            const existingError = e.target.parentNode.querySelector('.phone-error');
+
+            if (existingError) {
+                existingError.remove();
+            }
+
+            if (phone && !validatePhoneNumber(phone)) {
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'phone-error error-message';
+                errorMsg.textContent = '올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)';
+                e.target.parentNode.appendChild(errorMsg);
+            }
+        });
+    }
+}
+
+// 관리자 폰번호 입력 모달의 포맷팅 설정
+function setupPhoneInputFormatting() {
+    const phoneInputs = document.querySelectorAll('.phone-input');
+    phoneInputs.forEach(input => {
+        // 기존 이벤트 리스너 제거 (중복 방지)
+        input.removeEventListener('input', handlePhoneInput);
+        input.removeEventListener('blur', handlePhoneBlur);
+
+        // 새 이벤트 리스너 추가
+        input.addEventListener('input', handlePhoneInput);
+        input.addEventListener('blur', handlePhoneBlur);
+    });
+}
+
+// 폰번호 입력 이벤트 핸들러
+function handlePhoneInput(e) {
+    const formatted = formatPhoneNumber(e.target.value);
+    e.target.value = formatted;
+
+    // 실시간 유효성 검증
+    const isValid = validatePhoneNumber(formatted);
+    if (formatted.length > 0) {
+        if (isValid) {
+            e.target.style.borderColor = '#4CAF50';
+            e.target.style.boxShadow = '0 0 0 2px rgba(76, 175, 80, 0.1)';
+        } else {
+            e.target.style.borderColor = '#ff4757';
+            e.target.style.boxShadow = '0 0 0 2px rgba(255, 71, 87, 0.1)';
+        }
+    } else {
+        e.target.style.borderColor = '#e1e5e9';
+        e.target.style.boxShadow = 'none';
+    }
+}
+
+// 폰번호 블러 이벤트 핸들러
+function handlePhoneBlur(e) {
+    const phone = e.target.value.trim();
+    const phoneRow = e.target.closest('.phone-input-row');
+    const existingError = phoneRow ? phoneRow.querySelector('.phone-error') : null;
+
+    if (existingError) {
+        existingError.remove();
+    }
+
+    if (phone && !validatePhoneNumber(phone)) {
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'phone-error error-message';
+        errorMsg.textContent = '올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)';
+        errorMsg.style.fontSize = '12px';
+        errorMsg.style.marginTop = '4px';
+
+        if (phoneRow) {
+            phoneRow.appendChild(errorMsg);
+        }
+    }
+}
+
+// 날짜 입력 필드 설정
+function setupDateInput() {
+    const startDateInput = document.getElementById('startDate');
+    if (startDateInput) {
+        // 오늘 날짜를 기본값으로 설정
+        const today = new Date();
+        const todayString = today.toISOString().split('T')[0];
+
+        // 최소 날짜를 오늘로 설정 (과거 날짜 선택 불가)
+        startDateInput.setAttribute('min', todayString);
+
+        // 기본값이 없으면 오늘 날짜로 설정
+        if (!startDateInput.value) {
+            startDateInput.value = todayString;
+        }
+
+        // 3개월 후까지만 선택 가능하도록 제한
+        const maxDate = new Date(today);
+        maxDate.setMonth(maxDate.getMonth() + 3);
+        const maxDateString = maxDate.toISOString().split('T')[0];
+        startDateInput.setAttribute('max', maxDateString);
+    }
+}
+
+// 폼 자동 저장 기능 설정
+function setupFormAutoSave() {
+    const formInputs = ['name', 'phone', 'workType', 'startDate', 'description'];
+
+    formInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            // 저장된 값 불러오기
+            const savedValue = localStorage.getItem(`form_${inputId}`);
+            if (savedValue && inputId !== 'startDate') { // 날짜는 자동 저장하지 않음
+                input.value = savedValue;
+                // 저장된 값이 있는 필드에 시각적 표시
+                showFormFieldSaved(input);
+            }
+
+            // 값 변경시 자동 저장
+            input.addEventListener('input', function() {
+                if (this.value.trim()) {
+                    localStorage.setItem(`form_${inputId}`, this.value);
+                    showAutoSaveIndicator();
+                    showFormFieldSaved(this);
+                } else {
+                    localStorage.removeItem(`form_${inputId}`);
+                    this.classList.remove('success');
+                }
+            });
+
+            // 포커스 아웃시에도 저장 (select의 경우)
+            input.addEventListener('change', function() {
+                if (this.value.trim()) {
+                    localStorage.setItem(`form_${inputId}`, this.value);
+                    showAutoSaveIndicator();
+                    showFormFieldSaved(this);
+                } else {
+                    localStorage.removeItem(`form_${inputId}`);
+                    this.classList.remove('success');
+                }
+            });
+        }
+    });
+}
+
+// 자동 저장 알림 표시
+function showAutoSaveIndicator() {
+    const indicator = document.getElementById('autoSaveIndicator');
+    if (indicator) {
+        indicator.classList.add('show');
+
+        // 2초 후 숨김
+        setTimeout(() => {
+            indicator.classList.remove('show');
+        }, 2000);
+    }
+}
+
+// 폼 필드 저장 상태 표시
+function showFormFieldSaved(input) {
+    input.classList.add('success');
+
+    // 3초 후 성공 스타일 제거
+    setTimeout(() => {
+        input.classList.remove('success');
+    }, 3000);
+}
+
+// 폼 자동 저장 데이터 삭제
+function clearFormAutoSave() {
+    const formInputs = ['name', 'phone', 'workType', 'startDate', 'description'];
+    formInputs.forEach(inputId => {
+        localStorage.removeItem(`form_${inputId}`);
+    });
+}
+
 // 페이지 로드시 초기화 시도
 window.addEventListener('load', () => {
     initializeEmailJS().catch(error => {
         console.warn('EmailJS 초기화 실패:', error.message);
     });
+
+    // 전화번호 포맷팅 설정
+    setupPhoneFormatting();
+
+    // 날짜 입력 필드 설정
+    setupDateInput();
+
+    // 폼 자동 저장 기능 설정
+    setupFormAutoSave();
 });
 
 // 온라인 상태가 되면 재시도
 window.addEventListener('online', () => {
+    console.log('📶 네트워크 연결이 복구되었습니다.');
+    showNetworkStatus('online');
+
     if (!emailJSInitialized) {
         initializeEmailJS().catch(error => {
             console.warn('EmailJS 재초기화 실패:', error.message);
         });
     }
+
+    // 오프라인 큐에 있는 작업들 처리
+    processOfflineQueue();
 });
+
+// 오프라인 상태 감지
+window.addEventListener('offline', () => {
+    console.warn('📵 네트워크 연결이 끊어졌습니다.');
+    showNetworkStatus('offline');
+});
+
+// 네트워크 상태 표시
+function showNetworkStatus(status) {
+    const existingNotification = document.querySelector('.network-status');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+
+    const notification = document.createElement('div');
+    notification.className = `network-status ${status}`;
+
+    if (status === 'offline') {
+        notification.innerHTML = '📵 인터넷 연결이 끊어졌습니다. 데이터는 로컬에 저장됩니다.';
+        notification.style.background = 'rgba(244, 67, 54, 0.9)';
+    } else {
+        notification.innerHTML = '📶 인터넷 연결이 복구되었습니다.';
+        notification.style.background = 'rgba(76, 175, 80, 0.9)';
+    }
+
+    notification.style.cssText += `
+        position: fixed;
+        top: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 1001;
+        max-width: 90%;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        animation: slideDown 0.5s ease-out;
+    `;
+
+    document.body.appendChild(notification);
+
+    // 5초 후 자동 제거 (온라인 복구 알림의 경우)
+    if (status === 'online') {
+        setTimeout(() => {
+            notification.style.animation = 'slideUp 0.5s ease-out forwards';
+            setTimeout(() => notification.remove(), 500);
+        }, 3000);
+    }
+}
+
+// 오프라인 큐 관리
+let offlineQueue = [];
+
+function addToOfflineQueue(operation) {
+    offlineQueue.push({
+        ...operation,
+        timestamp: Date.now()
+    });
+    console.log('📦 오프라인 큐에 작업 추가:', operation.type);
+}
+
+function processOfflineQueue() {
+    if (offlineQueue.length === 0) return;
+
+    console.log(`📤 오프라인 큐 처리 시작: ${offlineQueue.length}개 작업`);
+
+    offlineQueue.forEach(async (operation, index) => {
+        try {
+            switch (operation.type) {
+                case 'save_application':
+                    await saveApplicationToSupabase(operation.data);
+                    break;
+                case 'update_admin_settings':
+                    await saveAdminSettingsToCloud();
+                    break;
+                case 'send_notification':
+                    await sendNotificationsViaEdgeFunction(operation.data);
+                    break;
+            }
+            console.log(`✅ 오프라인 작업 완료: ${operation.type}`);
+        } catch (error) {
+            console.error(`❌ 오프라인 작업 실패: ${operation.type}`, error);
+        }
+    });
+
+    // 큐 초기화
+    offlineQueue = [];
+    console.log('📤 오프라인 큐 처리 완료');
+}
 
 let formData = {};
 let currentQRDataURL = null;
@@ -1032,7 +1368,10 @@ async function processCustomerFormSubmission(event) {
             
             // 폼 초기화
             event.target.reset();
-            
+
+            // 자동 저장 데이터 삭제
+            clearFormAutoSave();
+
             // 결과 페이지로 이동
             showResult(savedApplication);
         } else {
@@ -1224,7 +1563,7 @@ function closeEmailInputModal() {
 function showPhoneInputModal() {
     const modal = document.getElementById('phoneInputModal');
     modal.style.display = 'block';
-    
+
     // 기존 입력란 초기화
     const phoneInputs = document.getElementById('phoneInputs');
     phoneInputs.innerHTML = `
@@ -1233,7 +1572,7 @@ function showPhoneInputModal() {
             <button type="button" class="remove-btn" onclick="removePhoneInput(this)" style="display: none;">삭제</button>
         </div>
     `;
-    
+
     // 저장된 폰번호 불러오기
     const savedPhones = JSON.parse(localStorage.getItem('savedPhoneNumbers') || '[]');
     savedPhones.forEach((phone, index) => {
@@ -1245,30 +1584,53 @@ function showPhoneInputModal() {
             inputs[index].value = phone;
         }
     });
+
+    // 새로 생성된 입력 필드에 포맷팅 적용
+    setupPhoneInputFormatting();
 }
 
 // 폰번호 입력란 추가
 function addPhoneInput() {
     const phoneInputs = document.getElementById('phoneInputs');
     const phoneRows = phoneInputs.querySelectorAll('.phone-input-row');
-    
+
     if (phoneRows.length >= 3) {
         alert('폰번호는 최대 3개까지 입력할 수 있습니다.');
         return;
     }
-    
+
     const newRow = document.createElement('div');
     newRow.className = 'phone-input-row';
     newRow.innerHTML = `
         <input type="tel" class="phone-input" placeholder="010-1234-5678">
         <button type="button" class="remove-btn" onclick="removePhoneInput(this)">삭제</button>
     `;
-    
+
     phoneInputs.appendChild(newRow);
-    
+
+    // 새로 추가된 입력 필드에 포맷팅 적용
+    const newInput = newRow.querySelector('.phone-input');
+    if (newInput) {
+        newInput.addEventListener('input', handlePhoneInput);
+        newInput.addEventListener('blur', handlePhoneBlur);
+    }
+
     // 삭제 버튼 표시/숨김 조정
-    if (phoneRows.length === 0) {
-        phoneInputs.querySelector('.remove-btn').style.display = 'none';
+    updateRemoveButtonVisibility();
+}
+
+// 삭제 버튼 표시/숨김 관리 함수
+function updateRemoveButtonVisibility() {
+    const phoneInputs = document.getElementById('phoneInputs');
+    const phoneRows = phoneInputs.querySelectorAll('.phone-input-row');
+    const removeButtons = phoneInputs.querySelectorAll('.remove-btn');
+
+    if (phoneRows.length <= 1) {
+        // 1개 이하일 때는 모든 삭제 버튼 숨김
+        removeButtons.forEach(btn => btn.style.display = 'none');
+    } else {
+        // 2개 이상일 때는 모든 삭제 버튼 표시
+        removeButtons.forEach(btn => btn.style.display = 'inline-block');
     }
 }
 
@@ -1276,14 +1638,12 @@ function addPhoneInput() {
 function removePhoneInput(button) {
     const phoneInputs = document.getElementById('phoneInputs');
     const phoneRows = phoneInputs.querySelectorAll('.phone-input-row');
-    
+
     if (phoneRows.length > 1) {
         button.parentElement.remove();
-        
+
         // 삭제 버튼 표시/숨김 조정
-        if (phoneRows.length === 2) {
-            phoneInputs.querySelector('.remove-btn').style.display = 'none';
-        }
+        updateRemoveButtonVisibility();
     }
 }
 
@@ -1291,32 +1651,43 @@ function removePhoneInput(button) {
 function savePhoneNumbers() {
     const phoneInputs = document.querySelectorAll('.phone-input');
     const phones = [];
-    
+    const invalidPhones = [];
+
     phoneInputs.forEach(input => {
         const phone = input.value.trim();
-        if (phone && phone.length >= 10) {
-            phones.push(phone);
+        if (phone) {
+            if (validatePhoneNumber(phone)) {
+                phones.push(phone);
+            } else {
+                invalidPhones.push(phone);
+            }
         }
     });
-    
+
+    // 유효하지 않은 번호가 있으면 경고
+    if (invalidPhones.length > 0) {
+        alert(`다음 전화번호의 형식이 올바르지 않습니다:\n${invalidPhones.join('\n')}\n\n올바른 형식: 010-1234-5678`);
+        return;
+    }
+
     if (phones.length === 0) {
         alert('유효한 폰번호를 입력해주세요.');
         return;
     }
-    
+
     // localStorage에 저장
     localStorage.setItem('savedPhoneNumbers', JSON.stringify(phones));
-    
+
     // 화면 업데이트
     displaySavedInputs();
-    
+
     // Supabase에 저장
     saveAdminSettingsToCloud();
-    
+
     // 모달 닫기
     closePhoneInputModal();
-    
-    alert('폰번호가 저장되었습니다!');
+
+    alert(`폰번호 ${phones.length}개가 저장되었습니다!`);
 }
 
 // 폰번호 입력 모달 닫기
@@ -1685,6 +2056,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 고객용 모드인 경우 QR 생성 버튼과 카카오톡 공유 버튼, 문자 버튼 숨기고 제출 버튼 텍스트 변경
     if (isCustomerMode) {
+        // body에 고객 모드 데이터 속성 추가 (CSS에서 활용)
+        document.body.setAttribute('data-customer-mode', 'true');
+        console.log('🧑‍💼 고객 모드가 활성화되었습니다.');
         // URL 파라미터로 전달된 관리자 데이터(제목만)를 localStorage에 주입하여
         // 다른 기기(고객 폰)에서도 관리자 설정이 반영되도록 동기화
         (function syncAdminDataFromURL() {
@@ -1701,6 +2075,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // DOM 준비 완료 후 UI 요소들 처리
         const setupCustomerMode = () => {
+            console.log('🔧 고객 모드 설정 시작...');
+
+            // 요소 찾기
             const qrBtn = document.getElementById('qrGenerateBtn');
             const shareBtn = document.querySelector('.share-btn');
             const smsBtn = document.querySelector('.sms-btn');
@@ -1709,6 +2086,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const adminInputSection = document.getElementById('adminInputSection');
             const adminActionSection = document.getElementById('adminActionSection');
             const customerSubmitSection = document.getElementById('customerSubmitSection');
+
+            // 요소 존재 확인 로그
+            console.log('📝 요소 확인:', {
+                adminInputSection: !!adminInputSection,
+                adminActionSection: !!adminActionSection,
+                customerSubmitSection: !!customerSubmitSection,
+                qrSection: !!qrSection
+            });
             
             // 관리자용 요소들 완전히 숨기기 (CSS도 추가)
             if (adminInputSection) {
@@ -1754,9 +2139,14 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             setupCustomerMode();
         }
-        
-        // 추가로 페이지 로드 완료 후에도 한번 더 실행
+
+        // 페이지 로드 완료 후에도 여러 번 실행하여 확실히 적용
         setTimeout(setupCustomerMode, 100);
+        setTimeout(setupCustomerMode, 500);
+        setTimeout(setupCustomerMode, 1000);
+
+        // 윈도우 로드 이벤트에서도 실행
+        window.addEventListener('load', setupCustomerMode);
         
         // 저장된 제목이 있으면 우선 사용, 부제목은 고정
         const headerTitle = document.querySelector('header h1');
