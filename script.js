@@ -2095,12 +2095,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const smsBtn = document.querySelector('.sms-btn');
             const submitBtn = document.querySelector('.submit-btn');
             const qrSection = document.getElementById('qrSection');
+            const dealerInfoSection = document.getElementById('dealerInfoSection');
             const adminInputSection = document.getElementById('adminInputSection');
             const adminActionSection = document.getElementById('adminActionSection');
             const customerSubmitSection = document.getElementById('customerSubmitSection');
 
             // 요소 존재 확인 로그
             console.log('📝 요소 확인:', {
+                dealerInfoSection: !!dealerInfoSection,
                 adminInputSection: !!adminInputSection,
                 adminActionSection: !!adminActionSection,
                 customerSubmitSection: !!customerSubmitSection,
@@ -2108,6 +2110,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // 관리자용 요소들 완전히 숨기기 (CSS도 추가)
+            if (dealerInfoSection) {
+                dealerInfoSection.style.display = 'none';
+                dealerInfoSection.style.visibility = 'hidden';
+                dealerInfoSection.classList.add('customer-mode-hidden');
+            }
             if (adminInputSection) {
                 adminInputSection.style.display = 'none';
                 adminInputSection.style.visibility = 'hidden';
