@@ -566,7 +566,6 @@ header p {
 }
 
 /* URL 파라미터 기반 고객 모드 감지 */
-body[data-customer-mode="true"] #dealerInfoSection,
 body[data-customer-mode="true"] #adminInputSection,
 body[data-customer-mode="true"] #adminActionSection {
     display: none !important;
@@ -1004,27 +1003,19 @@ body[data-customer-mode="true"] .form-actions .submit-btn:hover {
     box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
-/* 대리점 정보 섹션 스타일 */
-.dealer-info-section {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 15px;
-    padding: 10px 0;
-}
-
 /* 대리점 정보 버튼 스타일 */
 .dealer-btn {
     background: linear-gradient(135deg, #FF6B6B 0%, #FF5252 100%);
     color: white;
     border: none;
-    padding: 14px 24px;
-    border-radius: 12px;
+    padding: 12px 20px;
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 500;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-    min-width: 180px;
+    margin: 5px;
 }
 
 .dealer-btn:hover {

@@ -2095,14 +2095,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const smsBtn = document.querySelector('.sms-btn');
             const submitBtn = document.querySelector('.submit-btn');
             const qrSection = document.getElementById('qrSection');
-            const dealerInfoSection = document.getElementById('dealerInfoSection');
             const adminInputSection = document.getElementById('adminInputSection');
             const adminActionSection = document.getElementById('adminActionSection');
             const customerSubmitSection = document.getElementById('customerSubmitSection');
 
             // 요소 존재 확인 로그
             console.log('📝 요소 확인:', {
-                dealerInfoSection: !!dealerInfoSection,
                 adminInputSection: !!adminInputSection,
                 adminActionSection: !!adminActionSection,
                 customerSubmitSection: !!customerSubmitSection,
@@ -2110,11 +2108,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // 관리자용 요소들 완전히 숨기기 (CSS도 추가)
-            if (dealerInfoSection) {
-                dealerInfoSection.style.display = 'none';
-                dealerInfoSection.style.visibility = 'hidden';
-                dealerInfoSection.classList.add('customer-mode-hidden');
-            }
             if (adminInputSection) {
                 adminInputSection.style.display = 'none';
                 adminInputSection.style.visibility = 'hidden';
@@ -2281,14 +2274,40 @@ function showDealerInfoSideModal() {
     
     const modal = document.getElementById('dealerInfoSideModal');
     if (modal) {
-        // 저장된 대리점 정보가 있는지 확인
-        const savedInfo = localStorage.getItem('dealerInfo');
-        if (savedInfo) {
-            const dealerInfo = JSON.parse(savedInfo);
-            displayDealerInfo(dealerInfo);
-        } else {
-            alert('❌ 저장된 대리점 정보가 없습니다.\n먼저 대리점 정보를 입력해주세요.');
-            showDealerInfoModal();
+        // Supabase에서 대리점 정보 불러오기 시도
+        try {
+            const currentApartmentId = APARTMENT_ID || 'speed_apartment3';
+            
+            const { data: supabaseData, error } = await supabase
+                .from('admin_settings')
+                .select('apartment_name, agency_name, agency_code, entry_issues')
+                .eq('apartment_id', currentApartmentId)
+                .single();
+            
+            if (!error && supabaseData) {
+                const dealerInfo = {
+                    dealerName: supabaseData.agency_name || '',
+                    dealerCode: supabaseData.agency_code || '',
+                    apartmentName: supabaseData.apartment_name || '',
+                    entryIssue: supabaseData.entry_issues || '',
+                    source: 'supabase'
+                };
+                displayDealerInfo(dealerInfo);
+            } else {
+                // Supabase에서 불러오기 실패 시 localStorage 확인
+                const savedInfo = localStorage.getItem('dealerInfo');
+                if (savedInfo) {
+                    const dealerInfo = JSON.parse(savedInfo);
+                    displayDealerInfo(dealerInfo);
+                } else {
+                    alert('❌ 저장된 대리점 정보가 없습니다.\n먼저 대리점 정보를 입력해주세요.');
+                    showDealerInfoModal();
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('❌ Supabase에서 대리점 정보 불러오기 실패:', error);
+            alert('❌ 대리점 정보를 불러올 수 없습니다.\n잠시 후 다시 시도해주세요.');
             return;
         }
         
@@ -2333,9 +2352,9 @@ function closeDealerInfoModal() {
     }
 }
 
-// 대리점 정보 저장 함수
-function saveDealerInfo() {
-    console.log('💾 대리점 정보 저장 시작');
+// 대리점 정보 저장 함수 (Supabase 연동)
+async function saveDealerInfo() {
+    console.log('💾 대리점 정보 저장 시작 (Supabase 연동)');
     
     try {
         // 입력값 수집
@@ -2365,16 +2384,52 @@ function saveDealerInfo() {
             return;
         }
         
-        // 대리점 정보 객체 생성
+        // 현재 아파트 ID 가져오기
+        const currentApartmentId = APARTMENT_ID || 'speed_apartment3';
+        
+        // Supabase에 저장할 데이터 구성
+        const supabaseData = {
+            apartment_id: currentApartmentId,
+            apartment_name: apartmentName,
+            agency_name: dealerName,
+            agency_code: dealerCode,
+            entry_issues: entryIssue || '특별한 진입 이슈 없음',
+            phones: JSON.parse(localStorage.getItem('savedPhoneNumbers') || '[]'),
+            emails: JSON.parse(localStorage.getItem('savedEmailAddresses') || '[]')
+        };
+        
+        console.log('💾 Supabase 저장 데이터:', supabaseData);
+        
+        // Supabase에 저장 또는 업데이트
+        const { data, error } = await supabase
+            .from('admin_settings')
+            .upsert([
+                {
+                    id: currentApartmentId,
+                    ...supabaseData
+                }
+            ], {
+                onConflict: 'apartment_id'
+            })
+            .select();
+        
+        if (error) {
+            console.error('❌ Supabase 저장 오류:', error);
+            throw new Error(`Supabase 저장 실패: ${error.message}`);
+        }
+        
+        console.log('✅ Supabase 저장 성공:', data);
+        
+        // localStorage에도 백업 저장
         const dealerInfo = {
             dealerName: dealerName,
             dealerCode: dealerCode,
             apartmentName: apartmentName,
             entryIssue: entryIssue || '특별한 진입 이슈 없음',
-            savedAt: new Date().toISOString()
+            savedAt: new Date().toISOString(),
+            supabaseId: data[0]?.id
         };
         
-        // localStorage에 저장
         localStorage.setItem('dealerInfo', JSON.stringify(dealerInfo));
         
         console.log('✅ 대리점 정보 저장 완료:', dealerInfo);
@@ -2382,11 +2437,14 @@ function saveDealerInfo() {
         // 화면에 정보 표시
         displayDealerInfo(dealerInfo);
         
+        // 대리점 정보 표시 영역 업데이트
+        updateDealerDisplay(dealerInfo);
+        
         // 모달 닫기
         closeDealerInfoModal();
         
         // 성공 메시지와 좌측 모달 표시 옵션
-        if (confirm(`✅ 대리점 정보가 저장되었습니다!\n\n🏢 ${dealerName}\n🔢 ${dealerCode}\n🏠 ${apartmentName}\n\n좌측 모달에서 정보를 확인하시겠습니까?`)) {
+        if (confirm(`✅ 대리점 정보가 Supabase에 저장되었습니다!\n\n🏢 ${dealerName}\n🔢 ${dealerCode}\n🏠 ${apartmentName}\n\n좌측 모달에서 정보를 확인하시겠습니까?`)) {
             showDealerInfoSideModal();
         }
         
@@ -2396,9 +2454,47 @@ function saveDealerInfo() {
     }
 }
 
-// 저장된 대리점 정보 불러오기 함수
-function loadDealerInfo() {
+// 저장된 대리점 정보 불러오기 함수 (Supabase 우선, localStorage 백업)
+async function loadDealerInfo() {
     try {
+        // 1. Supabase에서 먼저 불러오기 시도
+        const currentApartmentId = APARTMENT_ID || 'speed_apartment3';
+        
+        console.log('📂 Supabase에서 대리점 정보 불러오기 시도...');
+        
+        const { data: supabaseData, error } = await supabase
+            .from('admin_settings')
+            .select('apartment_name, agency_name, agency_code, entry_issues')
+            .eq('apartment_id', currentApartmentId)
+            .single();
+        
+        if (!error && supabaseData) {
+            console.log('✅ Supabase에서 대리점 정보 불러오기 성공:', supabaseData);
+            
+            // 폼 필드에 값 설정
+            document.getElementById('dealerName').value = supabaseData.agency_name || '';
+            document.getElementById('dealerCode').value = supabaseData.agency_code || '';
+            document.getElementById('apartmentName').value = supabaseData.apartment_name || '';
+            document.getElementById('entryIssue').value = supabaseData.entry_issues || '';
+            
+            // localStorage에도 동기화
+            const dealerInfo = {
+                dealerName: supabaseData.agency_name || '',
+                dealerCode: supabaseData.agency_code || '',
+                apartmentName: supabaseData.apartment_name || '',
+                entryIssue: supabaseData.entry_issues || '',
+                savedAt: new Date().toISOString(),
+                source: 'supabase'
+            };
+            
+            localStorage.setItem('dealerInfo', JSON.stringify(dealerInfo));
+            
+            return;
+        }
+        
+        // 2. Supabase에서 불러오기 실패 시 localStorage 백업 사용
+        console.log('⚠️ Supabase에서 불러오기 실패, localStorage 백업 사용');
+        
         const savedInfo = localStorage.getItem('dealerInfo');
         if (savedInfo) {
             const dealerInfo = JSON.parse(savedInfo);
@@ -2409,10 +2505,22 @@ function loadDealerInfo() {
             document.getElementById('apartmentName').value = dealerInfo.apartmentName || '';
             document.getElementById('entryIssue').value = dealerInfo.entryIssue || '';
             
-            console.log('📂 저장된 대리점 정보 불러오기 완료:', dealerInfo);
+            console.log('📂 localStorage에서 대리점 정보 불러오기 완료:', dealerInfo);
         }
+        
     } catch (error) {
         console.error('❌ 대리점 정보 불러오기 실패:', error);
+        
+        // 3. 완전 실패 시 localStorage만 사용
+        const savedInfo = localStorage.getItem('dealerInfo');
+        if (savedInfo) {
+            const dealerInfo = JSON.parse(savedInfo);
+            
+            document.getElementById('dealerName').value = dealerInfo.dealerName || '';
+            document.getElementById('dealerCode').value = dealerInfo.dealerCode || '';
+            document.getElementById('apartmentName').value = dealerInfo.apartmentName || '';
+            document.getElementById('entryIssue').value = dealerInfo.entryIssue || '';
+        }
     }
 }
 
@@ -2432,17 +2540,76 @@ function displayDealerInfo(dealerInfo) {
     console.log('📱 대리점 정보 화면 표시 완료 (좌측 모달용)');
 }
 
-// 페이지 로드 시 저장된 대리점 정보 자동 로드 (표시하지 않음)
-function loadAndDisplayDealerInfo() {
+// 대리점 정보 표시 영역 업데이트 함수
+function updateDealerDisplay(dealerInfo) {
+    const dealerDisplay = document.getElementById('dealerDisplay');
+    if (dealerDisplay && dealerInfo) {
+        dealerDisplay.textContent = `${dealerInfo.dealerName} (${dealerInfo.dealerCode})`;
+        dealerDisplay.style.color = '#D32F2F';
+        dealerDisplay.style.fontWeight = '500';
+    }
+}
+
+// 페이지 로드 시 저장된 대리점 정보 자동 로드 (Supabase 우선)
+async function loadAndDisplayDealerInfo() {
     try {
+        // 1. Supabase에서 먼저 불러오기 시도
+        const currentApartmentId = APARTMENT_ID || 'speed_apartment3';
+        
+        console.log('🔄 페이지 로드 시 Supabase에서 대리점 정보 로드 시도...');
+        
+        const { data: supabaseData, error } = await supabase
+            .from('admin_settings')
+            .select('apartment_name, agency_name, agency_code, entry_issues')
+            .eq('apartment_id', currentApartmentId)
+            .single();
+        
+        if (!error && supabaseData) {
+            console.log('✅ Supabase에서 대리점 정보 로드 성공:', supabaseData);
+            
+            // 좌측 모달용 정보 구성
+            const dealerInfo = {
+                dealerName: supabaseData.agency_name || '',
+                dealerCode: supabaseData.agency_code || '',
+                apartmentName: supabaseData.apartment_name || '',
+                entryIssue: supabaseData.entry_issues || '',
+                source: 'supabase'
+            };
+            
+            displayDealerInfo(dealerInfo); // 좌측 모달용으로 정보 업데이트
+            updateDealerDisplay(dealerInfo); // 버튼 옆 표시 영역 업데이트
+            
+            // localStorage에도 동기화
+            localStorage.setItem('dealerInfo', JSON.stringify({
+                ...dealerInfo,
+                savedAt: new Date().toISOString()
+            }));
+            
+            console.log('🔄 페이지 로드 시 대리점 정보 로드 완료 (Supabase)');
+            return;
+        }
+        
+        // 2. Supabase에서 불러오기 실패 시 localStorage 백업 사용
+        console.log('⚠️ Supabase에서 불러오기 실패, localStorage 백업 사용');
+        
         const savedInfo = localStorage.getItem('dealerInfo');
         if (savedInfo) {
             const dealerInfo = JSON.parse(savedInfo);
             displayDealerInfo(dealerInfo); // 좌측 모달용으로 정보만 업데이트
-            console.log('🔄 페이지 로드 시 대리점 정보 로드 완료 (좌측 모달 준비)');
+            updateDealerDisplay(dealerInfo); // 버튼 옆 표시 영역 업데이트
+            console.log('🔄 페이지 로드 시 대리점 정보 로드 완료 (localStorage)');
         }
+        
     } catch (error) {
         console.error('❌ 페이지 로드 시 대리점 정보 로드 실패:', error);
+        
+        // 3. 완전 실패 시 localStorage만 사용
+        const savedInfo = localStorage.getItem('dealerInfo');
+        if (savedInfo) {
+            const dealerInfo = JSON.parse(savedInfo);
+            displayDealerInfo(dealerInfo);
+            updateDealerDisplay(dealerInfo);
+        }
     }
 }
 
@@ -2451,18 +2618,15 @@ window.showAddApartmentModal = showAddApartmentModal;
 window.closeAddApartmentModal = closeAddApartmentModal;
 window.addNewApartment = addNewApartment;
 
-// 아파트 추가 모달 표시 함수
+// 새로운 아파트 생성 모달 표시 함수 (초기화 포함)
 function showAddApartmentModal() {
-    console.log('🏢 아파트 추가 모달 열기');
+    console.log('🏠 새로운 아파트 생성 모달 열기');
     const modal = document.getElementById('addApartmentModal');
     if (modal) {
         modal.style.display = 'block';
 
-        // 폼 필드 초기화
-        document.getElementById('apartmentName').value = '';
-        document.getElementById('apartmentId').value = '';
-        document.getElementById('apartmentTitle').value = '';
-        document.getElementById('apartmentSubtitle').value = '';
+        // 폼 필드 완전 초기화
+        resetApartmentForm();
 
         // 첫 번째 입력 필드에 포커스
         document.getElementById('apartmentName').focus();
@@ -2471,18 +2635,51 @@ function showAddApartmentModal() {
     }
 }
 
-// 아파트 추가 모달 닫기 함수
+// 아파트 생성 폼 초기화 함수
+function resetApartmentForm() {
+    console.log('🔄 아파트 생성 폼 초기화');
+    
+    // 모든 입력 필드 초기화
+    const fields = [
+        'apartmentName',
+        'apartmentId', 
+        'apartmentTitle',
+        'apartmentSubtitle'
+    ];
+    
+    fields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.value = '';
+            field.style.borderColor = '#e1e5e9';
+            field.style.boxShadow = 'none';
+            
+            // 기존 오류 메시지 제거
+            const errorMsg = field.parentNode.querySelector('.error-message');
+            if (errorMsg) {
+                errorMsg.remove();
+            }
+        }
+    });
+    
+    console.log('✅ 아파트 생성 폼 초기화 완료');
+}
+
+// 새로운 아파트 생성 모달 닫기 함수 (초기화 포함)
 function closeAddApartmentModal() {
-    console.log('🚪 아파트 추가 모달 닫기');
+    console.log('🚪 새로운 아파트 생성 모달 닫기');
     const modal = document.getElementById('addApartmentModal');
     if (modal) {
         modal.style.display = 'none';
+        
+        // 모달 닫을 때도 폼 초기화
+        resetApartmentForm();
     }
 }
 
-// 새 아파트 추가 메인 함수
+// 새로운 아파트 생성 메인 함수
 async function addNewApartment() {
-    console.log('🏗️ 새 아파트 추가 프로세스 시작');
+    console.log('🏗️ 새로운 아파트 생성 프로세스 시작');
 
     try {
         // 입력값 수집 및 검증
@@ -2593,29 +2790,29 @@ async function addNewApartment() {
             throw error;
         }
 
-        console.log('✅ 새 아파트 추가 성공:', data);
+        console.log('✅ 새로운 아파트 생성 성공:', data);
 
         // 성공 메시지와 URL 정보 제공
         const newApartmentUrl = `${window.location.origin}${window.location.pathname}?apartment=${apartmentId}`;
         const customerUrl = `${window.location.origin}${window.location.pathname}?apartment=${apartmentId}&mode=customer`;
 
-        alert(`✅ ${apartmentName}이(가) 성공적으로 추가되었습니다!\n\n` +
+        alert(`✅ ${apartmentName}이(가) 성공적으로 생성되었습니다!\n\n` +
               `🏢 관리자 URL: ${newApartmentUrl}\n` +
               `👤 고객용 URL: ${customerUrl}`);
 
-        // 모달 닫기
+        // 모달 닫기 (초기화 포함)
         closeAddApartmentModal();
 
         // 사용자에게 새 아파트로 이동할지 묻기
-        if (confirm('🔄 새로 추가된 아파트 관리 페이지로 이동하시겠습니까?')) {
+        if (confirm('🔄 새로 생성된 아파트 관리 페이지로 이동하시겠습니까?')) {
             window.location.href = `${window.location.pathname}?apartment=${apartmentId}`;
         }
 
     } catch (error) {
-        console.error('💥 아파트 추가 중 오류 발생:', error);
+        console.error('💥 새로운 아파트 생성 중 오류 발생:', error);
 
         // 사용자 친화적 오류 메시지
-        let userMessage = '아파트 추가 중 오류가 발생했습니다.';
+        let userMessage = '새로운 아파트 생성 중 오류가 발생했습니다.';
 
         if (error.message) {
             if (error.message.includes('network') || error.message.includes('fetch')) {

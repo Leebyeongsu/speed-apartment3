@@ -93,13 +93,12 @@
             </div>
 
             <div class="form-actions">
-                <!-- 상단: 대리점 정보 버튼 (관리자용) -->
-                <div id="dealerInfoSection" class="dealer-info-section">
-                    <button type="button" class="dealer-btn" onclick="showDealerInfoModal()">🏢 대리점 정보</button>
-                </div>
-                
                 <!-- 메일/폰번호 입력 그룹 (관리자용) -->
                 <div id="adminInputSection" class="input-section">
+                    <div class="input-group">
+                        <button type="button" class="dealer-btn" onclick="showDealerInfoModal()">🏢 대리점 정보</button>
+                        <span id="dealerDisplay" class="input-display"></span>
+                    </div>
                     <div class="input-group">
                         <button type="button" class="email-btn" onclick="showEmailInputModal()">메일 입력</button>
                         <span id="emailDisplay" class="input-display"></span>
@@ -112,7 +111,7 @@
                 
                 <!-- 하단: 공유 및 QR 코드 버튼들 (관리자용) -->
                 <div id="adminActionSection" class="action-section">
-                    <button type="button" class="add-apartment-btn" onclick="showAddApartmentModal()">🏠 아파트 추가</button>
+                    <button type="button" class="add-apartment-btn" onclick="showAddApartmentModal()">🏠 새로운 아파트 생성</button>
                     <button type="button" class="share-btn" onclick="shareToKakao()">카카오톡 공유</button>
                     <button type="button" class="qr-btn" id="qrGenerateBtn" onclick="generatePageQR()">📱 QR 코드 생성</button>
                     <button type="button" class="qr-btn" id="qrDeleteBtn" onclick="deleteQR()" style="display: none;">🗑️ QR 코드 삭제</button>
@@ -274,7 +273,7 @@
         <div id="addApartmentModal" class="modal" style="display: none;">
             <div class="modal-content">
                 <span class="close-modal" onclick="closeAddApartmentModal()">×</span>
-                <h2>🏠 새 아파트 추가</h2>
+                <h2>🏠 새로운 아파트 생성</h2>
                 <div class="email-form">
                     <div class="form-group">
                         <label for="apartmentName">아파트 이름 *</label>
@@ -294,7 +293,7 @@
                         <input type="text" id="apartmentSubtitle" placeholder="예: 신청서를 작성하여 제출해 주세요">
                     </div>
                     <div class="form-actions">
-                        <button type="button" class="submit-btn" onclick="addNewApartment()">아파트 추가</button>
+                        <button type="button" class="submit-btn" onclick="addNewApartment()">새로운 아파트 생성</button>
                         <button type="button" class="close-btn" onclick="closeAddApartmentModal()">취소</button>
                     </div>
                 </div>

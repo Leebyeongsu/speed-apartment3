@@ -112,6 +112,9 @@ CREATE TABLE admin_settings (
     id SERIAL PRIMARY KEY,
     apartment_id TEXT UNIQUE NOT NULL,
     apartment_name TEXT,
+    agency_name TEXT,  -- 대리점 이름
+    agency_code TEXT,  -- 대리점 코드 (새로 추가 예정)
+    entry_issues TEXT, -- 진입 이슈 (새로 추가 예정)
     title TEXT,
     subtitle TEXT,
     phones TEXT[],
