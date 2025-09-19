@@ -16,13 +16,14 @@
     <!-- 자동 저장 알림 -->
     <div id="autoSaveIndicator" class="auto-save-indicator">💾 자동 저장됨</div>
 
-    <div class="container">
-        <header>
-            <h1 id="mainTitle" onclick="editTitle()" style="cursor: pointer; user-select: none;" title="클릭하여 제목 수정">📡 Speed 아파트 3단지 통신 환경 개선 신청서</h1>
-            <p id="mainSubtitle" style="cursor: default; user-select: none;">신청서를 작성하여 제출해 주세요</p>
-            
-            <!-- 대리점 정보 표시 영역 (관리자 모드에서만 표시) -->
-            <div id="dealerInfoDisplay" class="dealer-info-display" style="display: none;">
+    <!-- 좌측 대리점 정보 모달 (관리자 모드 전용) -->
+    <div id="dealerInfoSideModal" class="dealer-side-modal" style="display: none;">
+        <div class="dealer-side-content">
+            <div class="dealer-side-header">
+                <h3>🏢 대리점 정보</h3>
+                <button type="button" class="dealer-close-btn" onclick="closeDealerInfoSideModal()">×</button>
+            </div>
+            <div class="dealer-side-body">
                 <div class="dealer-info-item">
                     <span class="dealer-info-label">🏢 대리점:</span>
                     <span class="dealer-info-value" id="displayDealerName">-</span>
@@ -40,6 +41,16 @@
                     <span class="dealer-info-value" id="displayEntryIssue">-</span>
                 </div>
             </div>
+            <div class="dealer-side-footer">
+                <button type="button" class="dealer-edit-btn" onclick="showDealerInfoModal()">정보 수정</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1 id="mainTitle" onclick="editTitle()" style="cursor: pointer; user-select: none;" title="클릭하여 제목 수정">📡 Speed 아파트 3단지 통신 환경 개선 신청서</h1>
+            <p id="mainSubtitle" style="cursor: default; user-select: none;">신청서를 작성하여 제출해 주세요</p>
         </header>
 
         <form id="applicationForm" class="application-form">

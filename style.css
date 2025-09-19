@@ -1047,33 +1047,148 @@ body[data-customer-mode="true"] .form-actions .submit-btn:hover {
     box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
 }
 
-/* 대리점 정보 표시 영역 */
-.dealer-info-display {
+/* 좌측 대리점 정보 모달 */
+.dealer-side-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 350px;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.dealer-side-content {
     background: linear-gradient(135deg, #FFE0E6 0%, #FFCDD2 100%);
     border: 2px solid #FF6B6B;
-    border-radius: 10px;
-    padding: 15px;
-    margin: 10px 0;
+    border-left: none;
+    border-radius: 0 15px 15px 0;
+    width: 320px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+    animation: slideInFromLeft 0.3s ease-out;
+}
+
+.dealer-side-header {
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF5252 100%);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 0 13px 0 0;
+}
+
+.dealer-side-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.dealer-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+}
+
+.dealer-close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.dealer-side-body {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.dealer-side-footer {
+    padding: 20px;
+    border-top: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.dealer-edit-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF5252 100%);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
     font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.dealer-edit-btn:hover {
+    background: linear-gradient(135deg, #FF5252 0%, #FF4444 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
 }
 
 .dealer-info-item {
     display: flex;
-    justify-content: space-between;
-    margin: 8px 0;
-    padding: 5px 0;
-    border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+    flex-direction: column;
+    margin: 15px 0;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    border-left: 4px solid #FF6B6B;
 }
 
 .dealer-info-label {
     font-weight: 600;
     color: #D32F2F;
-    min-width: 100px;
+    font-size: 12px;
+    margin-bottom: 4px;
 }
 
 .dealer-info-value {
     color: #333;
-    flex: 1;
-    text-align: right;
+    font-size: 14px;
     word-break: break-word;
+    line-height: 1.4;
+}
+
+/* 애니메이션 */
+@keyframes slideInFromLeft {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+    .dealer-side-modal {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .dealer-side-content {
+        width: 90%;
+        border-radius: 15px;
+        height: auto;
+        max-height: 80vh;
+    }
+    
+    .dealer-side-header {
+        border-radius: 13px 13px 0 0;
+    }
 }

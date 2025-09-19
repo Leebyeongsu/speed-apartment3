@@ -2256,8 +2256,51 @@ window.downloadQR = downloadQR;
 window.showDealerInfoModal = showDealerInfoModal;
 window.closeDealerInfoModal = closeDealerInfoModal;
 window.saveDealerInfo = saveDealerInfo;
+window.showDealerInfoSideModal = showDealerInfoSideModal;
+window.closeDealerInfoSideModal = closeDealerInfoSideModal;
 
-// 대리점 정보 모달 표시 함수
+// 좌측 대리점 정보 모달 표시 함수 (관리자 모드 전용)
+function showDealerInfoSideModal() {
+    console.log('🏢 좌측 대리점 정보 모달 열기');
+    
+    // 관리자 모드인지 확인
+    const urlParams = new URLSearchParams(window.location.search);
+    const isCustomerMode = urlParams.has('customer') || urlParams.has('apply') || urlParams.get('mode') === 'customer';
+    
+    if (isCustomerMode) {
+        alert('❌ 관리자 모드에서만 사용할 수 있습니다.');
+        return;
+    }
+    
+    const modal = document.getElementById('dealerInfoSideModal');
+    if (modal) {
+        // 저장된 대리점 정보가 있는지 확인
+        const savedInfo = localStorage.getItem('dealerInfo');
+        if (savedInfo) {
+            const dealerInfo = JSON.parse(savedInfo);
+            displayDealerInfo(dealerInfo);
+        } else {
+            alert('❌ 저장된 대리점 정보가 없습니다.\n먼저 대리점 정보를 입력해주세요.');
+            showDealerInfoModal();
+            return;
+        }
+        
+        modal.style.display = 'flex';
+    } else {
+        console.error('❌ dealerInfoSideModal 요소를 찾을 수 없습니다.');
+    }
+}
+
+// 좌측 대리점 정보 모달 닫기 함수
+function closeDealerInfoSideModal() {
+    console.log('🚪 좌측 대리점 정보 모달 닫기');
+    const modal = document.getElementById('dealerInfoSideModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// 대리점 정보 모달 표시 함수 (편집용)
 function showDealerInfoModal() {
     console.log('🏢 대리점 정보 모달 열기');
     const modal = document.getElementById('dealerInfoModal');
@@ -2335,8 +2378,10 @@ function saveDealerInfo() {
         // 모달 닫기
         closeDealerInfoModal();
         
-        // 성공 메시지
-        alert(`✅ 대리점 정보가 저장되었습니다!\n\n🏢 ${dealerName}\n🔢 ${dealerCode}\n🏠 ${apartmentName}`);
+        // 성공 메시지와 좌측 모달 표시 옵션
+        if (confirm(`✅ 대리점 정보가 저장되었습니다!\n\n🏢 ${dealerName}\n🔢 ${dealerCode}\n🏠 ${apartmentName}\n\n좌측 모달에서 정보를 확인하시겠습니까?`)) {
+            showDealerInfoSideModal();
+        }
         
     } catch (error) {
         console.error('💥 대리점 정보 저장 중 오류:', error);
@@ -2364,40 +2409,33 @@ function loadDealerInfo() {
     }
 }
 
-// 대리점 정보 화면 표시 함수
+// 대리점 정보 화면 표시 함수 (좌측 모달용)
 function displayDealerInfo(dealerInfo) {
-    const displayArea = document.getElementById('dealerInfoDisplay');
-    if (displayArea) {
-        // 관리자 모드에서만 표시
-        const urlParams = new URLSearchParams(window.location.search);
-        const isCustomerMode = urlParams.has('customer') || urlParams.has('apply') || urlParams.get('mode') === 'customer';
-        
-        if (!isCustomerMode) {
-            // 정보 업데이트
-            document.getElementById('displayDealerName').textContent = dealerInfo.dealerName || '-';
-            document.getElementById('displayDealerCode').textContent = dealerInfo.dealerCode || '-';
-            document.getElementById('displayApartmentName').textContent = dealerInfo.apartmentName || '-';
-            document.getElementById('displayEntryIssue').textContent = dealerInfo.entryIssue || '-';
-            
-            // 표시 영역 보이기
-            displayArea.style.display = 'block';
-            
-            console.log('📱 대리점 정보 화면 표시 완료');
-        }
-    }
+    // 좌측 모달의 정보 업데이트
+    const nameElement = document.getElementById('displayDealerName');
+    const codeElement = document.getElementById('displayDealerCode');
+    const apartmentElement = document.getElementById('displayApartmentName');
+    const issueElement = document.getElementById('displayEntryIssue');
+    
+    if (nameElement) nameElement.textContent = dealerInfo.dealerName || '-';
+    if (codeElement) codeElement.textContent = dealerInfo.dealerCode || '-';
+    if (apartmentElement) apartmentElement.textContent = dealerInfo.apartmentName || '-';
+    if (issueElement) issueElement.textContent = dealerInfo.entryIssue || '-';
+    
+    console.log('📱 대리점 정보 화면 표시 완료 (좌측 모달용)');
 }
 
-// 페이지 로드 시 저장된 대리점 정보 자동 로드 및 표시
+// 페이지 로드 시 저장된 대리점 정보 자동 로드 (표시하지 않음)
 function loadAndDisplayDealerInfo() {
     try {
         const savedInfo = localStorage.getItem('dealerInfo');
         if (savedInfo) {
             const dealerInfo = JSON.parse(savedInfo);
-            displayDealerInfo(dealerInfo);
-            console.log('🔄 페이지 로드 시 대리점 정보 자동 표시 완료');
+            displayDealerInfo(dealerInfo); // 좌측 모달용으로 정보만 업데이트
+            console.log('🔄 페이지 로드 시 대리점 정보 로드 완료 (좌측 모달 준비)');
         }
     } catch (error) {
-        console.error('❌ 페이지 로드 시 대리점 정보 표시 실패:', error);
+        console.error('❌ 페이지 로드 시 대리점 정보 로드 실패:', error);
     }
 }
 
