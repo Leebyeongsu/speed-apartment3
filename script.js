@@ -2837,12 +2837,9 @@ async function addNewApartment() {
 
                 if (confirm(`⚠️ 다른 사용자가 먼저 같은 ID를 생성했습니다!\n\n충돌 ID: ${apartmentId}\n\n자동 생성된 고유 ID로 계속 진행할까요?\n새 ID: ${autoUniqueId}`)) {
                     apartmentId = autoUniqueId;
-                    document.getElementById('newApartmentId').value = autoUniqueId;
                     console.log('🔄 자동 고유 ID 적용:', autoUniqueId);
                 } else {
-                    alert('❌ 생성이 취소되었습니다. 다른 ID를 사용해주세요.');
-                    document.getElementById('newApartmentId').value = '';
-                    document.getElementById('newApartmentId').focus();
+                    alert('❌ 생성이 취소되었습니다.');
                     return;
                 }
             } else {
@@ -2918,7 +2915,6 @@ async function addNewApartment() {
                 if (confirm(`⚠️ ID가 이미 존재합니다!\n\n자동 생성된 고유 ID로 계속할까요?\n새 ID: ${autoId}`)) {
                     insertData.id = autoId;              // Primary Key 업데이트
                     insertData.apartment_id = autoId;    // 호환성 유지
-                    document.getElementById('newApartmentId').value = autoId;
 
                     // 재시도
                     const { data: retryData, error: retryError } = await supabaseClient
@@ -2938,8 +2934,7 @@ async function addNewApartment() {
                     // 성공
                     console.log('✅ 재시도 성공!', retryData);
                 } else {
-                    alert('❌ 생성이 취소되었습니다. 다른 ID를 사용해주세요.');
-                    document.getElementById('newApartmentId').focus();
+                    alert('❌ 생성이 취소되었습니다.');
                     return;
                 }
             } else {
