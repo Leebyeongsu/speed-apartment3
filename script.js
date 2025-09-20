@@ -2690,14 +2690,6 @@ async function addNewApartment() {
             return;
         }
 
-        // ID 형식 검증 (영문 소문자, 숫자, 밑줄만 허용)
-        const idPattern = /^[a-z0-9_]+$/;
-        if (!idPattern.test(apartmentId)) {
-            alert('❌ 아파트 ID는 영문 소문자, 숫자, 밑줄(_)만 사용 가능합니다.\n예: speed_apartment4, apt_complex_1');
-            document.getElementById('newApartmentId').focus();
-            return;
-        }
-
         // Supabase 클라이언트 확인 및 초기화
         console.log('🔄 Supabase 연결 상태 확인...');
         let supabaseClient = supabase;
@@ -2722,6 +2714,36 @@ async function addNewApartment() {
                 }
             }
         }
+
+        // ID 형식 검증 (영문 소문자, 숫자, 밑줄만 허용)
+        const idPattern = /^[a-z0-9_]+$/;
+        if (!idPattern.test(apartmentId)) {
+            alert('❌ 아파트 ID는 영문 소문자, 숫자, 밑줄(_)만 사용 가능합니다.\n예: speed_apartment4, apt_complex_1');
+            document.getElementById('newApartmentId').focus();
+            return;
+        }
+
+        // 아파트 ID 중복 체크
+        console.log('🔍 아파트 ID 중복 체크 중...');
+        const { data: existingApartment, error: checkError } = await supabaseClient
+            .from('admin_settings')
+            .select('apartment_id')
+            .eq('apartment_id', apartmentId)
+            .single();
+
+        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = No rows found (정상)
+            console.error('❌ ID 중복 체크 오류:', checkError);
+            alert('❌ 아파트 ID 중복 체크 중 오류가 발생했습니다.');
+            return;
+        }
+
+        if (existingApartment) {
+            alert(`❌ 이미 존재하는 아파트 ID입니다: ${apartmentId}\n다른 ID를 사용해주세요.`);
+            document.getElementById('newApartmentId').focus();
+            return;
+        }
+
+        console.log('✅ 아파트 ID 사용 가능:', apartmentId);
 
         // 기본값 설정
         const finalTitle = apartmentTitle || `${apartmentName} 통신 환경 개선 신청서`;
@@ -2770,7 +2792,7 @@ async function addNewApartment() {
             // 중복 키 오류 특별 처리
             if (error.message && (error.message.includes('duplicate') || error.message.includes('unique') || error.message.includes('already exists'))) {
                 alert(`❌ 이미 존재하는 아파트 ID입니다: ${apartmentId}\n다른 ID를 사용해주세요.`);
-                document.getElementById('apartmentId').focus();
+                document.getElementById('newApartmentId').focus();
                 return;
             }
 
