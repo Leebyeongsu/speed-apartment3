@@ -246,21 +246,22 @@
                 <h2>🏢 대리점 정보 관리</h2>
                 <div class="email-form">
                     <div class="form-group">
-                        <label for="dealerName">대리점 이름 *</label>
+                        <label for="dealerName">🏢 대리점 이름 * <small>(Supabase: agency_name)</small></label>
                         <input type="text" id="dealerName" placeholder="예: Speed 통신 대리점" required>
                     </div>
                     <div class="form-group">
-                        <label for="dealerCode">대리점 코드 *</label>
+                        <label for="dealerCode">🔢 대리점 코드 * <small>(Supabase: dealer_code)</small></label>
                         <input type="text" id="dealerCode" placeholder="예: SPEED001" required pattern="[A-Z0-9]+" title="영문 대문자와 숫자만 사용 가능">
                         <small style="color: #666; font-size: 0.9rem;">영문 대문자와 숫자만 사용 가능합니다</small>
                     </div>
                     <div class="form-group">
-                        <label for="apartmentName">아파트 이름 *</label>
+                        <label for="apartmentName">🏠 아파트 이름 * <small>(Supabase: apartment_name)</small></label>
                         <input type="text" id="apartmentName" placeholder="예: Speed 아파트 3단지" required>
                     </div>
                     <div class="form-group">
-                        <label for="entryIssue">진입 이슈</label>
+                        <label for="entryIssue">⚠️ 진입 이슈 <small>(Supabase: entry_issue)</small></label>
                         <textarea id="entryIssue" rows="4" placeholder="예: 지하주차장 통신 신호 약함, 엘리베이터 내 통신 불량 등"></textarea>
+                        <small style="color: #666; font-size: 0.9rem;">공사 시 주의해야 할 현장 특이사항을 입력하세요</small>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="submit-btn" onclick="saveDealerInfo()">정보 저장</button>

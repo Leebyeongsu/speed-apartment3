@@ -2396,8 +2396,8 @@ async function saveDealerInfo() {
             apartment_id: currentApartmentId,
             apartment_name: apartmentName,
             agency_name: dealerName,
-            agency_code: dealerCode,
-            entry_issues: entryIssue || '특별한 진입 이슈 없음',
+            dealer_code: dealerCode, // 새 칼럼
+            entry_issue: entryIssue || '특별한 진입 이슈 없음', // 새 칼럼
             phones: JSON.parse(localStorage.getItem('savedPhoneNumbers') || '[]'),
             emails: JSON.parse(localStorage.getItem('savedEmailAddresses') || '[]')
         };
@@ -2561,10 +2561,10 @@ async function loadAndDisplayDealerInfo() {
         const currentApartmentId = APARTMENT_ID || 'speed_apartment3';
         
         console.log('🔄 페이지 로드 시 Supabase에서 대리점 정보 로드 시도...');
-        
+
         const { data: supabaseData, error } = await supabase
             .from('admin_settings')
-            .select('apartment_name, agency_name, agency_code, entry_issues')
+            .select('apartment_name, agency_name, dealer_code, entry_issue')
             .eq('apartment_id', currentApartmentId)
             .single();
         
@@ -2574,9 +2574,9 @@ async function loadAndDisplayDealerInfo() {
             // 좌측 모달용 정보 구성
             const dealerInfo = {
                 dealerName: supabaseData.agency_name || '',
-                dealerCode: supabaseData.agency_code || '',
+                dealerCode: supabaseData.dealer_code || '',
                 apartmentName: supabaseData.apartment_name || '',
-                entryIssue: supabaseData.entry_issues || '',
+                entryIssue: supabaseData.entry_issue || '',
                 source: 'supabase'
             };
             
