@@ -2962,9 +2962,14 @@ async function addNewApartment() {
         // 모달 닫기 (초기화 포함)
         closeAddApartmentModal();
 
-        // 사용자에게 새 아파트로 이동할지 묻기
-        if (confirm('🔄 새로 생성된 아파트 관리 페이지로 이동하시겠습니까?')) {
-            window.location.href = `${window.location.pathname}?apartment=${confirmedApartmentId}`;
+        // 대리점 정보 입력 안내
+        if (confirm('✅ 아파트가 생성되었습니다!\n\n대리점 정보를 입력하시겠습니까?')) {
+            showDealerInfoModal();
+        } else {
+            // 사용자에게 새 아파트로 이동할지 묻기
+            if (confirm('🔄 새로 생성된 아파트 관리 페이지로 이동하시겠습니까?')) {
+                window.location.href = `${window.location.pathname}?apartment=${confirmedApartmentId}`;
+            }
         }
 
     } catch (error) {

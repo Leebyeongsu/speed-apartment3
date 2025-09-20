@@ -1024,6 +1024,17 @@ body[data-customer-mode="true"] .form-actions .submit-btn:hover {
     box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
 }
 
+.dealer-display {
+    margin-left: 10px;
+    font-size: 14px;
+    color: #D32F2F;
+    font-weight: 500;
+    background: rgba(211, 47, 47, 0.1);
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(211, 47, 47, 0.2);
+}
+
 /* 대리점 정보 모달 스타일 */
 #dealerInfoModal .modal-content {
     max-width: 500px;
