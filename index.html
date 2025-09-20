@@ -250,22 +250,13 @@
                 <h2>🏢 대리점 정보 관리</h2>
                 <div class="email-form">
                     <div class="form-group">
-                        <label for="dealerName">🏢 대리점 이름 *</label>
+                        <label for="dealerName">🏢 대리점 이름 * (agency_name)</label>
                         <input type="text" id="dealerName" placeholder="예: Speed 통신 대리점" required>
                     </div>
                     <div class="form-group">
-                        <label for="dealerCode">🔢 대리점 코드 *</label>
+                        <label for="dealerCode">🔢 대리점 코드 * (dealer_code)</label>
                         <input type="text" id="dealerCode" placeholder="예: SPEED001" required pattern="[A-Z0-9]+" title="영문 대문자와 숫자만 사용 가능">
                         <small style="color: #666; font-size: 0.9rem;">영문 대문자와 숫자만 사용 가능합니다</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="apartmentName">🏠 아파트 이름 *</label>
-                        <input type="text" id="apartmentName" placeholder="예: Speed 아파트 3단지" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="entryIssue">⚠️ 진입 이슈</label>
-                        <textarea id="entryIssue" rows="4" placeholder="예: 지하주차장 통신 신호 약함, 엘리베이터 내 통신 불량 등"></textarea>
-                        <small style="color: #666; font-size: 0.9rem;">공사 시 주의해야 할 현장 특이사항을 입력하세요</small>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="submit-btn" onclick="saveDealerInfo()">정보 저장</button>
@@ -282,21 +273,23 @@
                 <h2>🏠 새 아파트 추가</h2>
                 <div class="email-form">
                     <div class="form-group">
-                        <label for="apartmentName">아파트 이름 *</label>
-                        <input type="text" id="apartmentName" placeholder="예: Speed 아파트 4단지" required>
+                        <label for="newApartmentName">🏠 아파트 이름 * (apartment_name)</label>
+                        <input type="text" id="newApartmentName" placeholder="예: Speed 아파트 4단지" required>
                     </div>
                     <div class="form-group">
-                        <label for="apartmentId">아파트 ID *</label>
-                        <input type="text" id="apartmentId" placeholder="예: speed_apartment4" required pattern="[a-z0-9_]+" title="영문 소문자, 숫자, 밑줄(_)만 사용 가능">
+                        <label for="newApartmentId">🔑 아파트 ID * (apartment_id)</label>
+                        <input type="text" id="newApartmentId" placeholder="예: speed_apartment4" required pattern="[a-z0-9_]+" title="영문 소문자, 숫자, 밑줄(_)만 사용 가능">
                         <small style="color: #666; font-size: 0.9rem;">영문 소문자, 숫자, 밑줄(_)만 사용 가능합니다</small>
                     </div>
                     <div class="form-group">
-                        <label for="apartmentTitle">신청서 제목</label>
-                        <input type="text" id="apartmentTitle" placeholder="예: Speed 아파트 4단지 통신 환경 개선 신청서">
+                        <label for="newApartmentTitle">📋 신청서 제목 (title)</label>
+                        <input type="text" id="newApartmentTitle" placeholder="예: Speed 아파트 4단지 통신 환경 개선 신청서">
+                        <small style="color: #666; font-size: 0.9rem;">비워두면 자동으로 '{아파트 이름} 통신 환경 개선 신청서'로 설정됩니다</small>
                     </div>
                     <div class="form-group">
-                        <label for="apartmentSubtitle">신청서 부제목</label>
-                        <input type="text" id="apartmentSubtitle" placeholder="예: 신청서를 작성하여 제출해 주세요">
+                        <label for="newApartmentSubtitle">📝 신청서 부제목 (subtitle)</label>
+                        <input type="text" id="newApartmentSubtitle" placeholder="예: 신청서를 작성하여 제출해 주세요">
+                        <small style="color: #666; font-size: 0.9rem;">비워두면 기본값 '신청서를 작성하여 제출해 주세요'로 설정됩니다</small>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="submit-btn" onclick="addNewApartment()">아파트 추가</button>

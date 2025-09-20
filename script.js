@@ -2361,22 +2361,18 @@ async function saveDealerInfo() {
     console.log('💾 대리점 정보 저장 시작 (Supabase 연동)');
     
     try {
-        // 입력값 수집
+        // 입력값 수집 (대리점 정보만)
         const dealerName = document.getElementById('dealerName').value.trim();
         const dealerCode = document.getElementById('dealerCode').value.trim().toUpperCase();
-        const apartmentName = document.getElementById('apartmentName').value.trim();
-        const entryIssue = document.getElementById('entryIssue').value.trim();
-        
+
         console.log('📋 입력값:', {
             dealerName,
-            dealerCode,
-            apartmentName,
-            entryIssue
+            dealerCode
         });
-        
+
         // 필수 필드 검증
-        if (!dealerName || !dealerCode || !apartmentName) {
-            alert('❌ 대리점 이름, 대리점 코드, 아파트 이름은 필수입니다.');
+        if (!dealerName || !dealerCode) {
+            alert('❌ 대리점 이름과 대리점 코드는 필수입니다.');
             return;
         }
         
@@ -2390,31 +2386,22 @@ async function saveDealerInfo() {
         
         // 현재 아파트 ID 가져오기
         const currentApartmentId = APARTMENT_ID || 'speed_apartment3';
-        
-        // Supabase에 저장할 데이터 구성
+
+        // Supabase에 저장할 데이터 구성 (대리점 정보만 업데이트)
         const supabaseData = {
-            apartment_id: currentApartmentId,
-            apartment_name: apartmentName,
             agency_name: dealerName,
-            dealer_code: dealerCode, // 새 칼럼
-            entry_issue: entryIssue || '특별한 진입 이슈 없음', // 새 칼럼
+            dealer_code: dealerCode,
             phones: JSON.parse(localStorage.getItem('savedPhoneNumbers') || '[]'),
             emails: JSON.parse(localStorage.getItem('savedEmailAddresses') || '[]')
         };
         
         console.log('💾 Supabase 저장 데이터:', supabaseData);
         
-        // Supabase에 저장 또는 업데이트
+        // Supabase에 저장 또는 업데이트 (대리점 정보만)
         const { data, error } = await supabase
             .from('admin_settings')
-            .upsert([
-                {
-                    id: currentApartmentId,
-                    ...supabaseData
-                }
-            ], {
-                onConflict: 'apartment_id'
-            })
+            .update(supabaseData)
+            .eq('apartment_id', currentApartmentId)
             .select();
         
         if (error) {
@@ -2424,12 +2411,10 @@ async function saveDealerInfo() {
         
         console.log('✅ Supabase 저장 성공:', data);
         
-        // localStorage에도 백업 저장
+        // localStorage에도 백업 저장 (대리점 정보만)
         const dealerInfo = {
             dealerName: dealerName,
             dealerCode: dealerCode,
-            apartmentName: apartmentName,
-            entryIssue: entryIssue || '특별한 진입 이슈 없음',
             savedAt: new Date().toISOString(),
             supabaseId: data[0]?.id
         };
@@ -2447,8 +2432,8 @@ async function saveDealerInfo() {
         // 모달 닫기
         closeDealerInfoModal();
         
-        // 성공 메시지와 좌측 모달 표시 옵션
-        if (confirm(`✅ 대리점 정보가 Supabase에 저장되었습니다!\n\n🏢 ${dealerName}\n🔢 ${dealerCode}\n🏠 ${apartmentName}\n\n좌측 모달에서 정보를 확인하시겠습니까?`)) {
+        // 성공 메시지와 좌측 모달 표시 옵션 (대리점 정보만)
+        if (confirm(`✅ 대리점 정보가 Supabase에 저장되었습니다!\n\n🏢 ${dealerName}\n🔢 ${dealerCode}\n\n좌측 모달에서 정보를 확인하시겠습니까?`)) {
             showDealerInfoSideModal();
         }
         
@@ -2633,7 +2618,7 @@ function showAddApartmentModal() {
         resetApartmentForm();
 
         // 첫 번째 입력 필드에 포커스
-        document.getElementById('apartmentName').focus();
+        document.getElementById('newApartmentName').focus();
     } else {
         console.error('❌ addApartmentModal 요소를 찾을 수 없습니다.');
     }
@@ -2643,12 +2628,12 @@ function showAddApartmentModal() {
 function resetApartmentForm() {
     console.log('🔄 아파트 생성 폼 초기화');
     
-    // 모든 입력 필드 초기화
+    // 모든 입력 필드 초기화 (새 ID명 사용)
     const fields = [
-        'apartmentName',
-        'apartmentId', 
-        'apartmentTitle',
-        'apartmentSubtitle'
+        'newApartmentName',
+        'newApartmentId',
+        'newApartmentTitle',
+        'newApartmentSubtitle'
     ];
     
     fields.forEach(fieldId => {
@@ -2686,11 +2671,11 @@ async function addNewApartment() {
     console.log('🏗️ 새로운 아파트 생성 프로세스 시작');
 
     try {
-        // 입력값 수집 및 검증
-        const apartmentName = document.getElementById('apartmentName').value.trim();
-        const apartmentId = document.getElementById('apartmentId').value.trim();
-        const apartmentTitle = document.getElementById('apartmentTitle').value.trim();
-        const apartmentSubtitle = document.getElementById('apartmentSubtitle').value.trim();
+        // 입력값 수집 및 검증 (새 ID명 사용)
+        const apartmentName = document.getElementById('newApartmentName').value.trim();
+        const apartmentId = document.getElementById('newApartmentId').value.trim();
+        const apartmentTitle = document.getElementById('newApartmentTitle').value.trim();
+        const apartmentSubtitle = document.getElementById('newApartmentSubtitle').value.trim();
 
         console.log('📋 입력값:', {
             name: apartmentName,
@@ -2709,7 +2694,7 @@ async function addNewApartment() {
         const idPattern = /^[a-z0-9_]+$/;
         if (!idPattern.test(apartmentId)) {
             alert('❌ 아파트 ID는 영문 소문자, 숫자, 밑줄(_)만 사용 가능합니다.\n예: speed_apartment4, apt_complex_1');
-            document.getElementById('apartmentId').focus();
+            document.getElementById('newApartmentId').focus();
             return;
         }
 
