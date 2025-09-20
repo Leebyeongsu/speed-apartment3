@@ -2892,130 +2892,63 @@ async function addNewApartment() {
             // entry_issue 필드 제거됨 (대리점 관리에서 제외)
         };
 
-        // 더욱 안전한 INSERT 방식 - 먼저 최종 중복 확인 후 삽입
-        let insertAttempts = 0;
-        const maxAttempts = 5; // 시도 횟수 증가
-        let finalData = null;
-        let finalError = null;
+        // 단순화된 INSERT 방식 - upsert 사용으로 근본 해결
+        console.log('🔄 Upsert 방식으로 안전한 삽입 시도...');
 
-        while (insertAttempts < maxAttempts) {
-            insertAttempts++;
-            console.log(`🔄 삽입 시도 ${insertAttempts}/${maxAttempts} - ID: ${insertData.apartment_id}`);
-
-            // 삽입 직전 최종 중복 확인
-            console.log('🔍 삽입 직전 최종 중복 검사...');
-            const { data: existingCheck } = await supabaseClient
-                .from('admin_settings')
-                .select('apartment_id')
-                .eq('apartment_id', insertData.apartment_id);
-
-            if (existingCheck && existingCheck.length > 0) {
-                console.log(`⚠️ 삽입 직전 중복 발견: ${insertData.apartment_id}`);
-                // 즉시 새 ID 생성
-                const timestamp = Date.now().toString();
-                const random1 = Math.random().toString(36).substr(2, 6);
-                const random2 = Math.random().toString(36).substr(2, 4);
-                const attemptSuffix = insertAttempts.toString().padStart(2, '0');
-                const newId = `apt_${timestamp.slice(-10)}_${random1}_${random2}_${attemptSuffix}`;
-
-                console.log(`🔄 즉시 새 ID 생성: ${insertData.apartment_id} → ${newId}`);
-                insertData.apartment_id = newId;
-                document.getElementById('newApartmentId').value = newId;
-                continue; // 다시 체크
-            }
-
-            // 실제 삽입 시도
-            const { data, error } = await supabaseClient
-                .from('admin_settings')
-                .insert([insertData])
-                .select();
-
-            if (!error) {
-                // 성공
-                finalData = data;
-                finalError = null;
-                console.log('✅ 삽입 성공!', data);
-                break;
-            } else if (error.code === '23505' && insertAttempts < maxAttempts) {
-                // apartment_id 충돌 시 자동으로 새 ID 생성하여 재시도 (UNIQUE 또는 PK 충돌)
-                console.log(`❌ 시도 ${insertAttempts} 실패 (apartment_id 충돌):`, error.message);
-
-                // 더욱 강화된 고유 ID 생성 (충돌 확률 최소화)
-                const timestamp = Date.now().toString();
-                const random1 = Math.random().toString(36).substr(2, 6);
-                const random2 = Math.random().toString(36).substr(2, 4);
-                const attemptSuffix = insertAttempts.toString().padStart(2, '0');
-                const newId = `apt_${timestamp.slice(-10)}_${random1}_${random2}_${attemptSuffix}`;
-
-                console.log(`🔄 새 ID로 재시도: ${insertData.apartment_id} → ${newId}`);
-                insertData.apartment_id = newId;
-
-                // UI도 업데이트
-                document.getElementById('newApartmentId').value = newId;
-            } else {
-                // 다른 오류이거나 최대 시도 횟수 초과
-                finalError = error;
-                console.log(`💥 최종 실패 (시도 ${insertAttempts}):`, error);
-                break;
-            }
-        }
-
-        // 최종 결과 사용
-        const data = finalData;
-        const error = finalError;
+        const { data, error } = await supabaseClient
+            .from('admin_settings')
+            .upsert([insertData], {
+                onConflict: 'apartment_id',
+                ignoreDuplicates: false
+            })
+            .select();
 
         if (error) {
-            console.error('❌ Supabase 삽입 오류:', error);
-            console.error('🔍 오류 상세 정보:', {
-                message: error.message,
-                code: error.code,
-                details: error.details,
-                hint: error.hint
-            });
+            console.error('❌ Upsert 오류:', error);
 
-            // Primary Key 및 Unique 제약 조건 오류 처리
-            if (error.code === '23505' ||
-                (error.message && (
-                    error.message.includes('duplicate') ||
-                    error.message.includes('unique') ||
-                    error.message.includes('already exists') ||
-                    error.message.includes('violates unique constraint') ||
-                    error.message.includes('admin_settings_pkey')
-                ))) {
-
-                console.log('🚨 Primary Key/Unique 제약 조건 위반 감지');
-
-                // 제약 조건 타입에 따른 처리
-                const isPrimaryKeyError = error.message.includes('admin_settings_pkey');
-                const errorType = isPrimaryKeyError ? 'Primary Key' : 'Unique 제약조건';
-
-                // 더 안전한 고유 ID 생성 (날짜 + 랜덤)
+            // apartment_id 충돌이면 자동으로 고유 ID 생성하여 재시도
+            if (error.code === '23505') {
                 const timestamp = Date.now().toString();
-                const random = Math.random().toString(36).substr(2, 4);
-                const retryId = `${apartmentName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${timestamp.slice(-6)}_${random}`;
+                const random = Math.random().toString(36).substr(2, 6);
+                const autoId = `apt_${timestamp.slice(-8)}_${random}`;
 
-                if (confirm(`⚠️ ${errorType} 충돌이 발생했습니다!\n\n충돌 ID: ${finalApartmentId}\n오류: ${error.message}\n\n더 안전한 고유 ID로 재시도할까요?\n새 ID: ${retryId}`)) {
-                    document.getElementById('newApartmentId').value = retryId;
-                    alert('🔄 안전한 고유 ID로 설정되었습니다. 다시 "아파트 추가" 버튼을 클릭해주세요.');
-                    document.getElementById('newApartmentId').focus();
+                console.log(`🔄 자동 고유 ID 생성: ${insertData.apartment_id} → ${autoId}`);
+
+                if (confirm(`⚠️ ID가 이미 존재합니다!\n\n자동 생성된 고유 ID로 계속할까요?\n새 ID: ${autoId}`)) {
+                    insertData.apartment_id = autoId;
+                    document.getElementById('newApartmentId').value = autoId;
+
+                    // 재시도
+                    const { data: retryData, error: retryError } = await supabaseClient
+                        .from('admin_settings')
+                        .upsert([insertData], {
+                            onConflict: 'apartment_id',
+                            ignoreDuplicates: false
+                        })
+                        .select();
+
+                    if (retryError) {
+                        console.error('❌ 재시도도 실패:', retryError);
+                        alert(`❌ 재시도 실패: ${retryError.message}`);
+                        return;
+                    }
+
+                    // 성공
+                    console.log('✅ 재시도 성공!', retryData);
                 } else {
-                    alert('❌ 생성이 취소되었습니다. 수동으로 다른 ID를 입력해주세요.');
-                    document.getElementById('newApartmentId').value = '';
+                    alert('❌ 생성이 취소되었습니다. 다른 ID를 사용해주세요.');
                     document.getElementById('newApartmentId').focus();
+                    return;
                 }
+            } else {
+                alert(`❌ 생성 실패: ${error.message}`);
                 return;
             }
-
-            // 권한 오류 처리
-            if (error.message && (error.message.includes('permission') || error.message.includes('unauthorized'))) {
-                alert(`❌ 권한 오류: Supabase 접근 권한이 없습니다.\n관리자에게 문의하세요.`);
-                return;
-            }
-
-            // 일반 오류 처리
-            alert(`❌ 아파트 추가 실패: ${error.message || '알 수 없는 오류가 발생했습니다.'}`);
-            throw error;
+        } else {
+            console.log('✅ Upsert 성공!', data);
         }
+
+        // Upsert 처리가 위에서 완료됨 (중복 코드 제거)
 
         console.log('✅ 새로운 아파트 생성 성공:', data);
 
