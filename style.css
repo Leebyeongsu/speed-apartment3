@@ -567,7 +567,9 @@ header p {
 
 /* URL 파라미터 기반 고객 모드 감지 */
 body[data-customer-mode="true"] #adminInputSection,
-body[data-customer-mode="true"] #adminActionSection {
+body[data-customer-mode="true"] #adminActionSection,
+body[data-customer-mode="true"] #apartmentAddSection,
+body[data-customer-mode="true"] #dealerInfoSection {
     display: none !important;
 }
 

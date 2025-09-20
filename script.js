@@ -545,6 +545,7 @@ async function loadAdminSettingsFromCloud() {
         if (data) {
             // Supabase에서 가져온 데이터를 localStorage에 동기화
             if (data.title) localStorage.setItem('mainTitle', data.title);
+            if (data.subtitle) localStorage.setItem('mainSubtitle', data.subtitle);
             if (data.phones) localStorage.setItem('savedPhoneNumbers', JSON.stringify(data.phones));
             if (data.emails) localStorage.setItem('savedEmailAddresses', JSON.stringify(data.emails));
 
@@ -552,6 +553,19 @@ async function loadAdminSettingsFromCloud() {
             if (data.apartment_name) {
                 currentApartmentName = data.apartment_name;
                 console.log('📍 아파트 이름 설정:', currentApartmentName);
+            }
+
+            // 화면에 제목과 부제목 즉시 반영 (고객 모드에서도 적용)
+            const mainTitleElement = document.getElementById('mainTitle');
+            const mainSubtitleElement = document.getElementById('mainSubtitle');
+
+            if (mainTitleElement && data.title) {
+                mainTitleElement.textContent = data.title;
+                console.log('✅ 메인 제목 업데이트:', data.title);
+            }
+            if (mainSubtitleElement && data.subtitle) {
+                mainSubtitleElement.textContent = data.subtitle;
+                console.log('✅ 메인 부제목 업데이트:', data.subtitle);
             }
 
             adminSettings = data;
@@ -2948,6 +2962,22 @@ async function addNewApartment() {
         // Upsert 처리가 위에서 완료됨 (중복 코드 제거)
 
         console.log('✅ 새로운 아파트 생성 성공:', data);
+
+        // 메인 페이지의 제목과 부제목 즉시 업데이트
+        const mainTitleElement = document.getElementById('mainTitle');
+        const mainSubtitleElement = document.getElementById('mainSubtitle');
+
+        if (mainTitleElement) {
+            mainTitleElement.textContent = finalTitle;
+        }
+        if (mainSubtitleElement) {
+            mainSubtitleElement.textContent = finalSubtitle;
+        }
+
+        console.log('✅ 메인 페이지 제목/부제목 업데이트 완료:', {
+            title: finalTitle,
+            subtitle: finalSubtitle
+        });
 
         // 성공 메시지와 URL 정보 제공 (최종 확정 ID 사용)
         const confirmedApartmentId = insertData.apartment_id; // 최종 성공한 ID
