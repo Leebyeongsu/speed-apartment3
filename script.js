@@ -2915,10 +2915,12 @@ async function addNewApartment() {
                 // Primary Key 충돌 시 자동으로 새 ID 생성하여 재시도
                 console.log(`❌ 시도 ${insertAttempts} 실패 (PK 충돌):`, error.message);
 
-                // 더 고유한 ID 생성
+                // 더욱 강화된 고유 ID 생성 (충돌 확률 최소화)
                 const timestamp = Date.now().toString();
-                const random = Math.random().toString(36).substr(2, 4);
-                const newId = `apt_${timestamp.slice(-8)}_${random}`;
+                const random1 = Math.random().toString(36).substr(2, 6);
+                const random2 = Math.random().toString(36).substr(2, 4);
+                const attemptSuffix = insertAttempts.toString().padStart(2, '0');
+                const newId = `apt_${timestamp.slice(-10)}_${random1}_${random2}_${attemptSuffix}`;
 
                 console.log(`🔄 새 ID로 재시도: ${insertData.apartment_id} → ${newId}`);
                 insertData.apartment_id = newId;
