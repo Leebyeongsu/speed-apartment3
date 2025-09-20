@@ -2811,43 +2811,26 @@ async function addNewApartment() {
             return;
         }
 
-        // 아파트 ID 중복 체크 (개선된 방법)
-        console.log('🔍 아파트 ID 중복 체크 중...');
-        try {
-            const { data: existingApartments, error: checkError, count } = await supabaseClient
-                .from('admin_settings')
-                .select('apartment_id', { count: 'exact' })
-                .eq('apartment_id', apartmentId);
+        // 고유성 보장을 위한 원자적 삽입 방식 (Race Condition 해결)
+        console.log('🔒 안전한 아파트 생성 프로세스 시작...');
 
-            if (checkError) {
-                console.error('❌ ID 중복 체크 오류:', checkError);
-                alert(`❌ 아파트 ID 중복 체크 중 오류가 발생했습니다: ${checkError.message}`);
-                return;
-            }
-
-            // count가 0보다 크거나 data 배열에 항목이 있으면 중복
-            if (count > 0 || (existingApartments && existingApartments.length > 0)) {
-                console.log('❌ 중복된 아파트 ID 발견:', { count, data: existingApartments });
-                alert(`❌ 이미 존재하는 아파트 ID입니다: ${apartmentId}\n\n다른 ID를 사용해주세요.\n예: ${apartmentId}_v2, ${apartmentId}_new`);
-                document.getElementById('newApartmentId').value = '';
-                document.getElementById('newApartmentId').focus();
-                return;
-            }
-
-            console.log('✅ 아파트 ID 사용 가능:', apartmentId, { count, dataLength: existingApartments?.length || 0 });
-        } catch (duplicateCheckError) {
-            console.error('💥 중복 체크 중 예외 발생:', duplicateCheckError);
-            alert(`❌ 아파트 ID 중복 체크 중 오류가 발생했습니다: ${duplicateCheckError.message}`);
-            return;
+        // 사용자에게 타임스탬프 추가 옵션 제공 (동시성 문제 방지)
+        let finalApartmentId = apartmentId;
+        if (confirm(`🔐 동시 생성으로 인한 ID 충돌을 방지하기 위해 고유 식별자를 추가할까요?\n\n현재 ID: ${apartmentId}\n고유 ID: ${apartmentId}_${Date.now().toString().slice(-6)}\n\n안전한 생성을 위해 '확인'을 권장합니다.`)) {
+            finalApartmentId = `${apartmentId}_${Date.now().toString().slice(-6)}`;
+            document.getElementById('newApartmentId').value = finalApartmentId;
+            console.log('🔄 고유 식별자 추가된 ID:', finalApartmentId);
+        } else {
+            console.log('⚠️ 사용자가 원본 ID 사용 선택 - 중복 위험 존재');
         }
 
         // 기본값 설정
         const finalTitle = apartmentTitle || `${apartmentName} 통신 환경 개선 신청서`;
         const finalSubtitle = apartmentSubtitle || '신청서를 작성하여 제출해 주세요';
 
-        console.log('💾 Supabase에 데이터 삽입 중...');
+        console.log('💾 Supabase에 안전한 데이터 삽입 중...');
         console.log('🔍 삽입할 데이터:', {
-            apartment_id: apartmentId,
+            apartment_id: finalApartmentId,
             apartment_name: apartmentName,
             title: finalTitle,
             subtitle: finalSubtitle,
@@ -2858,12 +2841,12 @@ async function addNewApartment() {
             emails: []
         });
 
-        // Supabase에 새 아파트 데이터 삽입 (대리점 정보 필드 포함)
+        // Supabase에 원자적 삽입 (유니크 제약조건에 의한 중복 방지)
         const { data, error } = await supabaseClient
             .from('admin_settings')
             .insert([
                 {
-                    apartment_id: apartmentId,
+                    apartment_id: finalApartmentId,
                     apartment_name: apartmentName,
                     title: finalTitle,
                     subtitle: finalSubtitle,
@@ -2885,7 +2868,7 @@ async function addNewApartment() {
                 hint: error.hint
             });
 
-            // 중복 키 오류 특별 처리 (개선된 버전)
+            // 중복 키 오류 특별 처리 (Race Condition 대응)
             if (error.message && (
                 error.message.includes('duplicate') ||
                 error.message.includes('unique') ||
@@ -2893,10 +2876,19 @@ async function addNewApartment() {
                 error.message.includes('violates unique constraint') ||
                 error.code === '23505' // PostgreSQL unique violation
             )) {
-                console.log('🚨 중복 키 오류 감지 - 이중 검증 실패');
-                alert(`❌ 데이터베이스 오류: 이미 존재하는 아파트 ID입니다!\n\nID: ${apartmentId}\n\n중복 체크를 통과했지만 데이터베이스에서 중복이 감지되었습니다.\n다른 ID를 사용해주세요.`);
-                document.getElementById('newApartmentId').value = '';
-                document.getElementById('newApartmentId').focus();
+                console.log('🚨 동시성 중복 오류 감지 - Race Condition 발생');
+
+                // 자동으로 고유 ID 재생성 제안
+                const retryId = `${apartmentName.toLowerCase().replace(/\s+/g, '_')}_${Date.now().toString().slice(-8)}`;
+
+                if (confirm(`⚠️ 동시 생성으로 인한 ID 충돌이 발생했습니다!\n\n충돌 ID: ${finalApartmentId}\n\n자동 생성된 고유 ID로 재시도할까요?\n새 ID: ${retryId}\n\n'확인'을 클릭하면 자동으로 재시도합니다.`)) {
+                    document.getElementById('newApartmentId').value = retryId;
+                    alert('🔄 고유 ID로 자동 설정되었습니다. 다시 "아파트 추가" 버튼을 클릭해주세요.');
+                    document.getElementById('newApartmentId').focus();
+                } else {
+                    document.getElementById('newApartmentId').value = '';
+                    document.getElementById('newApartmentId').focus();
+                }
                 return;
             }
 
@@ -2913,11 +2905,12 @@ async function addNewApartment() {
 
         console.log('✅ 새로운 아파트 생성 성공:', data);
 
-        // 성공 메시지와 URL 정보 제공
-        const newApartmentUrl = `${window.location.origin}${window.location.pathname}?apartment=${apartmentId}`;
-        const customerUrl = `${window.location.origin}${window.location.pathname}?apartment=${apartmentId}&mode=customer`;
+        // 성공 메시지와 URL 정보 제공 (최종 ID 사용)
+        const newApartmentUrl = `${window.location.origin}${window.location.pathname}?apartment=${finalApartmentId}`;
+        const customerUrl = `${window.location.origin}${window.location.pathname}?apartment=${finalApartmentId}&mode=customer`;
 
-        alert(`✅ ${apartmentName}이(가) 성공적으로 생성되었습니다!\n\n` +
+        alert(`✅ ${apartmentName}이(가) 안전하게 생성되었습니다!\n\n` +
+              `🔑 최종 ID: ${finalApartmentId}\n` +
               `🏢 관리자 URL: ${newApartmentUrl}\n` +
               `👤 고객용 URL: ${customerUrl}`);
 
@@ -2926,7 +2919,7 @@ async function addNewApartment() {
 
         // 사용자에게 새 아파트로 이동할지 묻기
         if (confirm('🔄 새로 생성된 아파트 관리 페이지로 이동하시겠습니까?')) {
-            window.location.href = `${window.location.pathname}?apartment=${apartmentId}`;
+            window.location.href = `${window.location.pathname}?apartment=${finalApartmentId}`;
         }
 
     } catch (error) {
