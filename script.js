@@ -2878,21 +2878,23 @@ async function addNewApartment() {
         // Supabase에 안전한 삽입 (Primary Key 충돌 방지)
         console.log('🔒 Primary Key 안전 삽입 시도...');
 
+        // id 필드는 SERIAL PRIMARY KEY로 자동 생성되므로 제외
         const insertData = {
-            apartment_id: finalApartmentId,
+            apartment_id: finalApartmentId, // UNIQUE 제약 조건만 있음
             apartment_name: apartmentName,
             title: finalTitle,
             subtitle: finalSubtitle,
             agency_name: '', // 대리점 이름 (추후 설정)
             dealer_code: '', // 대리점 코드 (추후 설정)
-            entry_issue: '', // 진입 이슈 (추후 설정)
             phones: [],
             emails: []
+            // id는 PostgreSQL SERIAL로 자동 생성됨 - 명시적으로 지정하지 않음
+            // entry_issue 필드 제거됨 (대리점 관리에서 제외)
         };
 
-        // 자동 재시도 INSERT 방식 (upsert 문제 해결)
+        // 더욱 안전한 INSERT 방식 - 먼저 최종 중복 확인 후 삽입
         let insertAttempts = 0;
-        const maxAttempts = 3;
+        const maxAttempts = 5; // 시도 횟수 증가
         let finalData = null;
         let finalError = null;
 
@@ -2900,6 +2902,29 @@ async function addNewApartment() {
             insertAttempts++;
             console.log(`🔄 삽입 시도 ${insertAttempts}/${maxAttempts} - ID: ${insertData.apartment_id}`);
 
+            // 삽입 직전 최종 중복 확인
+            console.log('🔍 삽입 직전 최종 중복 검사...');
+            const { data: existingCheck } = await supabaseClient
+                .from('admin_settings')
+                .select('apartment_id')
+                .eq('apartment_id', insertData.apartment_id);
+
+            if (existingCheck && existingCheck.length > 0) {
+                console.log(`⚠️ 삽입 직전 중복 발견: ${insertData.apartment_id}`);
+                // 즉시 새 ID 생성
+                const timestamp = Date.now().toString();
+                const random1 = Math.random().toString(36).substr(2, 6);
+                const random2 = Math.random().toString(36).substr(2, 4);
+                const attemptSuffix = insertAttempts.toString().padStart(2, '0');
+                const newId = `apt_${timestamp.slice(-10)}_${random1}_${random2}_${attemptSuffix}`;
+
+                console.log(`🔄 즉시 새 ID 생성: ${insertData.apartment_id} → ${newId}`);
+                insertData.apartment_id = newId;
+                document.getElementById('newApartmentId').value = newId;
+                continue; // 다시 체크
+            }
+
+            // 실제 삽입 시도
             const { data, error } = await supabaseClient
                 .from('admin_settings')
                 .insert([insertData])
@@ -2912,8 +2937,8 @@ async function addNewApartment() {
                 console.log('✅ 삽입 성공!', data);
                 break;
             } else if (error.code === '23505' && insertAttempts < maxAttempts) {
-                // Primary Key 충돌 시 자동으로 새 ID 생성하여 재시도
-                console.log(`❌ 시도 ${insertAttempts} 실패 (PK 충돌):`, error.message);
+                // apartment_id 충돌 시 자동으로 새 ID 생성하여 재시도 (UNIQUE 또는 PK 충돌)
+                console.log(`❌ 시도 ${insertAttempts} 실패 (apartment_id 충돌):`, error.message);
 
                 // 더욱 강화된 고유 ID 생성 (충돌 확률 최소화)
                 const timestamp = Date.now().toString();
