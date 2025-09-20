@@ -333,7 +333,9 @@ window.addEventListener('load', () => {
     setupFormAutoSave();
     
     // 저장된 대리점 정보 자동 표시
-    loadAndDisplayDealerInfo();
+    loadAndDisplayDealerInfo().catch(error => {
+        console.error('대리점 정보 로드 중 오류:', error);
+    });
 });
 
 // 온라인 상태가 되면 재시도
@@ -414,12 +416,12 @@ function addToOfflineQueue(operation) {
     console.log('📦 오프라인 큐에 작업 추가:', operation.type);
 }
 
-function processOfflineQueue() {
+async function processOfflineQueue() {
     if (offlineQueue.length === 0) return;
 
     console.log(`📤 오프라인 큐 처리 시작: ${offlineQueue.length}개 작업`);
 
-    offlineQueue.forEach(async (operation, index) => {
+    for (const [index, operation] of offlineQueue.entries()) {
         try {
             switch (operation.type) {
                 case 'save_application':
@@ -436,7 +438,7 @@ function processOfflineQueue() {
         } catch (error) {
             console.error(`❌ 오프라인 작업 실패: ${operation.type}`, error);
         }
-    });
+    }
 
     // 큐 초기화
     offlineQueue = [];
@@ -2065,7 +2067,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // URL 파라미터 확인하여 고객용/관리자용 모드 결정
     const urlParams = new URLSearchParams(window.location.search);
     const isCustomerMode = urlParams.has('customer') || urlParams.has('apply') || urlParams.get('mode') === 'customer';
-    
+
+
     // 고객용 모드인 경우 QR 생성 버튼과 카카오톡 공유 버튼, 문자 버튼 숨기고 제출 버튼 텍스트 변경
     if (isCustomerMode) {
         // body에 고객 모드 데이터 속성 추가 (CSS에서 활용)
@@ -2233,6 +2236,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+
 // 모든 함수를 전역 스코프에 노출 (onclick 속성에서 사용하기 위해)
 window.editTitle = editTitle;
 window.saveTitle = saveTitle;
@@ -2260,7 +2264,7 @@ window.showDealerInfoSideModal = showDealerInfoSideModal;
 window.closeDealerInfoSideModal = closeDealerInfoSideModal;
 
 // 좌측 대리점 정보 모달 표시 함수 (관리자 모드 전용)
-function showDealerInfoSideModal() {
+async function showDealerInfoSideModal() {
     console.log('🏢 좌측 대리점 정보 모달 열기');
     
     // 관리자 모드인지 확인

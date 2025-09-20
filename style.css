@@ -1174,21 +1174,77 @@ body[data-customer-mode="true"] .form-actions .submit-btn:hover {
     }
 }
 
+/* 관리자 기능 구분선 스타일 */
+.admin-section-divider {
+    margin: 25px 0 20px 0;
+    text-align: center;
+}
+
+
+.divider-line {
+    color: #999;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    opacity: 0.8;
+}
+
+.admin-section-title {
+    color: #666;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+}
+
+.admin-section-title::before,
+.admin-section-title::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 30px;
+    height: 1px;
+    background-color: #999;
+}
+
+.admin-section-title::before {
+    left: -40px;
+}
+
+.admin-section-title::after {
+    right: -40px;
+}
+
 /* 모바일 대응 */
 @media (max-width: 768px) {
     .dealer-side-modal {
         width: 100%;
         justify-content: center;
     }
-    
+
     .dealer-side-content {
         width: 90%;
         border-radius: 15px;
         height: auto;
         max-height: 80vh;
     }
-    
+
     .dealer-side-header {
         border-radius: 13px 13px 0 0;
+    }
+
+    /* 모바일에서 관리자 구분선 조정 */
+    .admin-section-title::before,
+    .admin-section-title::after {
+        width: 20px;
+    }
+
+    .admin-section-title::before {
+        left: -30px;
+    }
+
+    .admin-section-title::after {
+        right: -30px;
     }
 }
