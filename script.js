@@ -2744,23 +2744,29 @@ async function addNewApartment() {
 
         console.log('💾 Supabase에 데이터 삽입 중...');
         console.log('🔍 삽입할 데이터:', {
-            id: apartmentId,
             apartment_id: apartmentId,
+            apartment_name: apartmentName,
             title: finalTitle,
             subtitle: finalSubtitle,
+            agency_name: '',
+            dealer_code: '',
+            entry_issue: '',
             phones: [],
             emails: []
         });
 
-        // Supabase에 새 아파트 데이터 삽입
+        // Supabase에 새 아파트 데이터 삽입 (대리점 정보 필드 포함)
         const { data, error } = await supabaseClient
             .from('admin_settings')
             .insert([
                 {
-                    id: apartmentId,
                     apartment_id: apartmentId,
+                    apartment_name: apartmentName,
                     title: finalTitle,
                     subtitle: finalSubtitle,
+                    agency_name: '', // 대리점 이름 (추후 설정)
+                    dealer_code: '', // 대리점 코드 (추후 설정)
+                    entry_issue: '', // 진입 이슈 (추후 설정)
                     phones: [],
                     emails: []
                 }
