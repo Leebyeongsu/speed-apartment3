@@ -2606,7 +2606,6 @@ async function loadAndDisplayDealerInfo() {
 window.showAddApartmentModal = showAddApartmentModal;
 window.closeAddApartmentModal = closeAddApartmentModal;
 window.addNewApartment = addNewApartment;
-window.validateApartmentId = validateApartmentId;
 
 // 새로운 아파트 생성 모달 표시 함수 (초기화 포함)
 function showAddApartmentModal() {
@@ -2629,10 +2628,9 @@ function showAddApartmentModal() {
 function resetApartmentForm() {
     console.log('🔄 아파트 생성 폼 초기화');
     
-    // 모든 입력 필드 초기화 (새 ID명 사용)
+    // 모든 입력 필드 초기화
     const fields = [
         'newApartmentName',
-        'newApartmentId',
         'newApartmentTitle',
         'newApartmentSubtitle'
     ];
@@ -2759,11 +2757,18 @@ async function addNewApartment() {
     console.log('🏗️ 새로운 아파트 생성 프로세스 시작');
 
     try {
-        // 입력값 수집 및 검증 (새 ID명 사용)
+        // 입력값 수집 및 검증
         const apartmentName = document.getElementById('newApartmentName').value.trim();
-        let apartmentId = document.getElementById('newApartmentId').value.trim(); // let으로 변경 (재할당 가능)
         const apartmentTitle = document.getElementById('newApartmentTitle').value.trim();
         const apartmentSubtitle = document.getElementById('newApartmentSubtitle').value.trim();
+
+        // 아파트 ID 자동 생성 (아파트 이름 기반)
+        const timestamp = Date.now().toString();
+        const sanitizedName = apartmentName.toLowerCase()
+            .replace(/[^a-z0-9]/g, '_')  // 특수문자를 _로 변환
+            .replace(/_+/g, '_')        // 연속된 _를 하나로
+            .replace(/^_|_$/g, '');     // 앞뒤 _제거
+        let apartmentId = `${sanitizedName}_${timestamp.slice(-8)}`;
 
         console.log('📋 입력값:', {
             name: apartmentName,
@@ -2773,8 +2778,9 @@ async function addNewApartment() {
         });
 
         // 필수 필드 검증
-        if (!apartmentName || !apartmentId) {
-            alert('❌ 아파트 이름과 ID는 필수입니다.');
+        if (!apartmentName) {
+            alert('❌ 아파트 이름을 입력해주세요.');
+            document.getElementById('newApartmentName').focus();
             return;
         }
 
@@ -2803,13 +2809,7 @@ async function addNewApartment() {
             }
         }
 
-        // ID 형식 검증 (영문 소문자, 숫자, 밑줄만 허용)
-        const idPattern = /^[a-z0-9_]+$/;
-        if (!idPattern.test(apartmentId)) {
-            alert('❌ 아파트 ID는 영문 소문자, 숫자, 밑줄(_)만 사용 가능합니다.\n예: speed_apartment4, apt_complex_1');
-            document.getElementById('newApartmentId').focus();
-            return;
-        }
+        // 자동 생성된 ID이므로 형식 검증 생략
 
         // 제출 시 최종 중복 체크 및 안전한 삽입
         console.log('🔒 제출 시 최종 검증 시작...');
