@@ -2606,6 +2606,7 @@ async function loadAndDisplayDealerInfo() {
 window.showAddApartmentModal = showAddApartmentModal;
 window.closeAddApartmentModal = closeAddApartmentModal;
 window.addNewApartment = addNewApartment;
+window.validateApartmentId = validateApartmentId;
 
 // 새로운 아파트 생성 모달 표시 함수 (초기화 포함)
 function showAddApartmentModal() {
@@ -2666,6 +2667,93 @@ function closeAddApartmentModal() {
     }
 }
 
+// 실시간 아파트 ID 유효성 검증 함수
+let validationTimeout;
+async function validateApartmentId(apartmentId) {
+    const statusElement = document.getElementById('apartmentIdStatus');
+    const inputElement = document.getElementById('newApartmentId');
+
+    // 빈 값이면 기본 메시지 표시
+    if (!apartmentId) {
+        statusElement.textContent = '영문 소문자, 숫자, 밑줄(_)만 사용 가능합니다';
+        statusElement.style.color = '#666';
+        inputElement.style.borderColor = '#e1e5e9';
+        return;
+    }
+
+    // 형식 검증
+    const idPattern = /^[a-z0-9_]+$/;
+    if (!idPattern.test(apartmentId)) {
+        statusElement.textContent = '❌ 영문 소문자, 숫자, 밑줄(_)만 사용 가능합니다';
+        statusElement.style.color = '#ff4444';
+        inputElement.style.borderColor = '#ff4444';
+        return;
+    }
+
+    // 너무 짧으면 경고
+    if (apartmentId.length < 3) {
+        statusElement.textContent = '⚠️ ID가 너무 짧습니다 (최소 3자)';
+        statusElement.style.color = '#ff8800';
+        inputElement.style.borderColor = '#ff8800';
+        return;
+    }
+
+    // 검증 중 표시
+    statusElement.textContent = '🔍 중복 체크 중...';
+    statusElement.style.color = '#0066cc';
+    inputElement.style.borderColor = '#0066cc';
+
+    // 이전 타이머 취소
+    if (validationTimeout) {
+        clearTimeout(validationTimeout);
+    }
+
+    // 500ms 후에 실제 중복 체크 실행 (사용자가 타이핑을 멈춘 후)
+    validationTimeout = setTimeout(async () => {
+        try {
+            // Supabase 클라이언트 확인
+            let supabaseClient = supabase;
+            if (!supabaseClient) {
+                statusElement.textContent = '❌ 데이터베이스 연결 오류';
+                statusElement.style.color = '#ff4444';
+                inputElement.style.borderColor = '#ff4444';
+                return;
+            }
+
+            // 중복 체크
+            const { data: existingApartments, error: checkError, count } = await supabaseClient
+                .from('admin_settings')
+                .select('apartment_id', { count: 'exact' })
+                .eq('apartment_id', apartmentId);
+
+            if (checkError) {
+                console.error('실시간 중복 체크 오류:', checkError);
+                statusElement.textContent = '❌ 중복 체크 오류';
+                statusElement.style.color = '#ff4444';
+                inputElement.style.borderColor = '#ff4444';
+                return;
+            }
+
+            // 중복 여부 확인
+            if (count > 0 || (existingApartments && existingApartments.length > 0)) {
+                statusElement.textContent = `❌ 이미 존재하는 ID입니다`;
+                statusElement.style.color = '#ff4444';
+                inputElement.style.borderColor = '#ff4444';
+            } else {
+                statusElement.textContent = `✅ 사용 가능한 ID입니다`;
+                statusElement.style.color = '#4CAF50';
+                inputElement.style.borderColor = '#4CAF50';
+            }
+
+        } catch (error) {
+            console.error('실시간 유효성 검증 오류:', error);
+            statusElement.textContent = '❌ 검증 중 오류 발생';
+            statusElement.style.color = '#ff4444';
+            inputElement.style.borderColor = '#ff4444';
+        }
+    }, 500); // 500ms 딜레이
+}
+
 // 새로운 아파트 생성 메인 함수
 async function addNewApartment() {
     console.log('🏗️ 새로운 아파트 생성 프로세스 시작');
@@ -2723,27 +2811,35 @@ async function addNewApartment() {
             return;
         }
 
-        // 아파트 ID 중복 체크
+        // 아파트 ID 중복 체크 (개선된 방법)
         console.log('🔍 아파트 ID 중복 체크 중...');
-        const { data: existingApartment, error: checkError } = await supabaseClient
-            .from('admin_settings')
-            .select('apartment_id')
-            .eq('apartment_id', apartmentId)
-            .single();
+        try {
+            const { data: existingApartments, error: checkError, count } = await supabaseClient
+                .from('admin_settings')
+                .select('apartment_id', { count: 'exact' })
+                .eq('apartment_id', apartmentId);
 
-        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = No rows found (정상)
-            console.error('❌ ID 중복 체크 오류:', checkError);
-            alert('❌ 아파트 ID 중복 체크 중 오류가 발생했습니다.');
+            if (checkError) {
+                console.error('❌ ID 중복 체크 오류:', checkError);
+                alert(`❌ 아파트 ID 중복 체크 중 오류가 발생했습니다: ${checkError.message}`);
+                return;
+            }
+
+            // count가 0보다 크거나 data 배열에 항목이 있으면 중복
+            if (count > 0 || (existingApartments && existingApartments.length > 0)) {
+                console.log('❌ 중복된 아파트 ID 발견:', { count, data: existingApartments });
+                alert(`❌ 이미 존재하는 아파트 ID입니다: ${apartmentId}\n\n다른 ID를 사용해주세요.\n예: ${apartmentId}_v2, ${apartmentId}_new`);
+                document.getElementById('newApartmentId').value = '';
+                document.getElementById('newApartmentId').focus();
+                return;
+            }
+
+            console.log('✅ 아파트 ID 사용 가능:', apartmentId, { count, dataLength: existingApartments?.length || 0 });
+        } catch (duplicateCheckError) {
+            console.error('💥 중복 체크 중 예외 발생:', duplicateCheckError);
+            alert(`❌ 아파트 ID 중복 체크 중 오류가 발생했습니다: ${duplicateCheckError.message}`);
             return;
         }
-
-        if (existingApartment) {
-            alert(`❌ 이미 존재하는 아파트 ID입니다: ${apartmentId}\n다른 ID를 사용해주세요.`);
-            document.getElementById('newApartmentId').focus();
-            return;
-        }
-
-        console.log('✅ 아파트 ID 사용 가능:', apartmentId);
 
         // 기본값 설정
         const finalTitle = apartmentTitle || `${apartmentName} 통신 환경 개선 신청서`;
@@ -2789,9 +2885,17 @@ async function addNewApartment() {
                 hint: error.hint
             });
 
-            // 중복 키 오류 특별 처리
-            if (error.message && (error.message.includes('duplicate') || error.message.includes('unique') || error.message.includes('already exists'))) {
-                alert(`❌ 이미 존재하는 아파트 ID입니다: ${apartmentId}\n다른 ID를 사용해주세요.`);
+            // 중복 키 오류 특별 처리 (개선된 버전)
+            if (error.message && (
+                error.message.includes('duplicate') ||
+                error.message.includes('unique') ||
+                error.message.includes('already exists') ||
+                error.message.includes('violates unique constraint') ||
+                error.code === '23505' // PostgreSQL unique violation
+            )) {
+                console.log('🚨 중복 키 오류 감지 - 이중 검증 실패');
+                alert(`❌ 데이터베이스 오류: 이미 존재하는 아파트 ID입니다!\n\nID: ${apartmentId}\n\n중복 체크를 통과했지만 데이터베이스에서 중복이 감지되었습니다.\n다른 ID를 사용해주세요.`);
+                document.getElementById('newApartmentId').value = '';
                 document.getElementById('newApartmentId').focus();
                 return;
             }
