@@ -2811,18 +2811,52 @@ async function addNewApartment() {
             return;
         }
 
-        // 고유성 보장을 위한 원자적 삽입 방식 (Race Condition 해결)
-        console.log('🔒 안전한 아파트 생성 프로세스 시작...');
+        // 제출 시 최종 중복 체크 및 안전한 삽입
+        console.log('🔒 제출 시 최종 검증 시작...');
 
-        // 사용자에게 타임스탬프 추가 옵션 제공 (동시성 문제 방지)
-        let finalApartmentId = apartmentId;
-        if (confirm(`🔐 동시 생성으로 인한 ID 충돌을 방지하기 위해 고유 식별자를 추가할까요?\n\n현재 ID: ${apartmentId}\n고유 ID: ${apartmentId}_${Date.now().toString().slice(-6)}\n\n안전한 생성을 위해 '확인'을 권장합니다.`)) {
-            finalApartmentId = `${apartmentId}_${Date.now().toString().slice(-6)}`;
-            document.getElementById('newApartmentId').value = finalApartmentId;
-            console.log('🔄 고유 식별자 추가된 ID:', finalApartmentId);
-        } else {
-            console.log('⚠️ 사용자가 원본 ID 사용 선택 - 중복 위험 존재');
+        // 제출 직전 중복 체크 (실시간 체크와 제출 사이의 시간 차이 보완)
+        console.log('🔍 제출 직전 apartment_id 중복 체크...');
+        try {
+            const { data: finalCheck, error: finalCheckError, count: finalCount } = await supabaseClient
+                .from('admin_settings')
+                .select('apartment_id', { count: 'exact' })
+                .eq('apartment_id', apartmentId);
+
+            if (finalCheckError) {
+                console.error('❌ 최종 중복 체크 오류:', finalCheckError);
+                alert(`❌ 최종 검증 중 오류가 발생했습니다: ${finalCheckError.message}`);
+                return;
+            }
+
+            // 중복 발견 시 처리
+            if (finalCount > 0 || (finalCheck && finalCheck.length > 0)) {
+                console.log('❌ 제출 직전 중복 감지:', { apartmentId, count: finalCount });
+
+                // 자동으로 고유 ID 생성
+                const autoUniqueId = `${apartmentId}_${Date.now().toString().slice(-6)}`;
+
+                if (confirm(`⚠️ 다른 사용자가 먼저 같은 ID를 생성했습니다!\n\n충돌 ID: ${apartmentId}\n\n자동 생성된 고유 ID로 계속 진행할까요?\n새 ID: ${autoUniqueId}`)) {
+                    apartmentId = autoUniqueId;
+                    document.getElementById('newApartmentId').value = autoUniqueId;
+                    console.log('🔄 자동 고유 ID 적용:', autoUniqueId);
+                } else {
+                    alert('❌ 생성이 취소되었습니다. 다른 ID를 사용해주세요.');
+                    document.getElementById('newApartmentId').value = '';
+                    document.getElementById('newApartmentId').focus();
+                    return;
+                }
+            } else {
+                console.log('✅ 제출 직전 중복 체크 통과:', apartmentId);
+            }
+
+        } catch (finalCheckError) {
+            console.error('💥 최종 중복 체크 중 예외:', finalCheckError);
+            alert(`❌ 최종 검증 중 오류가 발생했습니다: ${finalCheckError.message}`);
+            return;
         }
+
+        // 최종 확정된 ID 사용
+        const finalApartmentId = apartmentId;
 
         // 기본값 설정
         const finalTitle = apartmentTitle || `${apartmentName} 통신 환경 개선 신청서`;
