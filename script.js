@@ -2890,14 +2890,52 @@ async function addNewApartment() {
             emails: []
         };
 
-        // apartment_id가 Primary Key인 경우를 대비한 upsert 방식 사용
-        const { data, error } = await supabaseClient
-            .from('admin_settings')
-            .upsert([insertData], {
-                onConflict: 'apartment_id',
-                ignoreDuplicates: false
-            })
-            .select();
+        // 자동 재시도 INSERT 방식 (upsert 문제 해결)
+        let insertAttempts = 0;
+        const maxAttempts = 3;
+        let finalData = null;
+        let finalError = null;
+
+        while (insertAttempts < maxAttempts) {
+            insertAttempts++;
+            console.log(`🔄 삽입 시도 ${insertAttempts}/${maxAttempts} - ID: ${insertData.apartment_id}`);
+
+            const { data, error } = await supabaseClient
+                .from('admin_settings')
+                .insert([insertData])
+                .select();
+
+            if (!error) {
+                // 성공
+                finalData = data;
+                finalError = null;
+                console.log('✅ 삽입 성공!', data);
+                break;
+            } else if (error.code === '23505' && insertAttempts < maxAttempts) {
+                // Primary Key 충돌 시 자동으로 새 ID 생성하여 재시도
+                console.log(`❌ 시도 ${insertAttempts} 실패 (PK 충돌):`, error.message);
+
+                // 더 고유한 ID 생성
+                const timestamp = Date.now().toString();
+                const random = Math.random().toString(36).substr(2, 4);
+                const newId = `apt_${timestamp.slice(-8)}_${random}`;
+
+                console.log(`🔄 새 ID로 재시도: ${insertData.apartment_id} → ${newId}`);
+                insertData.apartment_id = newId;
+
+                // UI도 업데이트
+                document.getElementById('newApartmentId').value = newId;
+            } else {
+                // 다른 오류이거나 최대 시도 횟수 초과
+                finalError = error;
+                console.log(`💥 최종 실패 (시도 ${insertAttempts}):`, error);
+                break;
+            }
+        }
+
+        // 최종 결과 사용
+        const data = finalData;
+        const error = finalError;
 
         if (error) {
             console.error('❌ Supabase 삽입 오류:', error);
@@ -2954,12 +2992,13 @@ async function addNewApartment() {
 
         console.log('✅ 새로운 아파트 생성 성공:', data);
 
-        // 성공 메시지와 URL 정보 제공 (최종 ID 사용)
-        const newApartmentUrl = `${window.location.origin}${window.location.pathname}?apartment=${finalApartmentId}`;
-        const customerUrl = `${window.location.origin}${window.location.pathname}?apartment=${finalApartmentId}&mode=customer`;
+        // 성공 메시지와 URL 정보 제공 (최종 확정 ID 사용)
+        const confirmedApartmentId = insertData.apartment_id; // 최종 성공한 ID
+        const newApartmentUrl = `${window.location.origin}${window.location.pathname}?apartment=${confirmedApartmentId}`;
+        const customerUrl = `${window.location.origin}${window.location.pathname}?apartment=${confirmedApartmentId}&mode=customer`;
 
         alert(`✅ ${apartmentName}이(가) 안전하게 생성되었습니다!\n\n` +
-              `🔑 최종 ID: ${finalApartmentId}\n` +
+              `🔑 최종 ID: ${confirmedApartmentId}\n` +
               `🏢 관리자 URL: ${newApartmentUrl}\n` +
               `👤 고객용 URL: ${customerUrl}`);
 
@@ -2968,7 +3007,7 @@ async function addNewApartment() {
 
         // 사용자에게 새 아파트로 이동할지 묻기
         if (confirm('🔄 새로 생성된 아파트 관리 페이지로 이동하시겠습니까?')) {
-            window.location.href = `${window.location.pathname}?apartment=${finalApartmentId}`;
+            window.location.href = `${window.location.pathname}?apartment=${confirmedApartmentId}`;
         }
 
     } catch (error) {
