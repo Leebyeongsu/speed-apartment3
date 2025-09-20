@@ -2761,7 +2761,7 @@ async function addNewApartment() {
     try {
         // 입력값 수집 및 검증 (새 ID명 사용)
         const apartmentName = document.getElementById('newApartmentName').value.trim();
-        const apartmentId = document.getElementById('newApartmentId').value.trim();
+        let apartmentId = document.getElementById('newApartmentId').value.trim(); // let으로 변경 (재할당 가능)
         const apartmentTitle = document.getElementById('newApartmentTitle').value.trim();
         const apartmentSubtitle = document.getElementById('newApartmentSubtitle').value.trim();
 
