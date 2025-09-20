@@ -2875,22 +2875,28 @@ async function addNewApartment() {
             emails: []
         });
 
-        // Supabase에 원자적 삽입 (유니크 제약조건에 의한 중복 방지)
+        // Supabase에 안전한 삽입 (Primary Key 충돌 방지)
+        console.log('🔒 Primary Key 안전 삽입 시도...');
+
+        const insertData = {
+            apartment_id: finalApartmentId,
+            apartment_name: apartmentName,
+            title: finalTitle,
+            subtitle: finalSubtitle,
+            agency_name: '', // 대리점 이름 (추후 설정)
+            dealer_code: '', // 대리점 코드 (추후 설정)
+            entry_issue: '', // 진입 이슈 (추후 설정)
+            phones: [],
+            emails: []
+        };
+
+        // apartment_id가 Primary Key인 경우를 대비한 upsert 방식 사용
         const { data, error } = await supabaseClient
             .from('admin_settings')
-            .insert([
-                {
-                    apartment_id: finalApartmentId,
-                    apartment_name: apartmentName,
-                    title: finalTitle,
-                    subtitle: finalSubtitle,
-                    agency_name: '', // 대리점 이름 (추후 설정)
-                    dealer_code: '', // 대리점 코드 (추후 설정)
-                    entry_issue: '', // 진입 이슈 (추후 설정)
-                    phones: [],
-                    emails: []
-                }
-            ])
+            .upsert([insertData], {
+                onConflict: 'apartment_id',
+                ignoreDuplicates: false
+            })
             .select();
 
         if (error) {
@@ -2902,24 +2908,33 @@ async function addNewApartment() {
                 hint: error.hint
             });
 
-            // 중복 키 오류 특별 처리 (Race Condition 대응)
-            if (error.message && (
-                error.message.includes('duplicate') ||
-                error.message.includes('unique') ||
-                error.message.includes('already exists') ||
-                error.message.includes('violates unique constraint') ||
-                error.code === '23505' // PostgreSQL unique violation
-            )) {
-                console.log('🚨 동시성 중복 오류 감지 - Race Condition 발생');
+            // Primary Key 및 Unique 제약 조건 오류 처리
+            if (error.code === '23505' ||
+                (error.message && (
+                    error.message.includes('duplicate') ||
+                    error.message.includes('unique') ||
+                    error.message.includes('already exists') ||
+                    error.message.includes('violates unique constraint') ||
+                    error.message.includes('admin_settings_pkey')
+                ))) {
 
-                // 자동으로 고유 ID 재생성 제안
-                const retryId = `${apartmentName.toLowerCase().replace(/\s+/g, '_')}_${Date.now().toString().slice(-8)}`;
+                console.log('🚨 Primary Key/Unique 제약 조건 위반 감지');
 
-                if (confirm(`⚠️ 동시 생성으로 인한 ID 충돌이 발생했습니다!\n\n충돌 ID: ${finalApartmentId}\n\n자동 생성된 고유 ID로 재시도할까요?\n새 ID: ${retryId}\n\n'확인'을 클릭하면 자동으로 재시도합니다.`)) {
+                // 제약 조건 타입에 따른 처리
+                const isPrimaryKeyError = error.message.includes('admin_settings_pkey');
+                const errorType = isPrimaryKeyError ? 'Primary Key' : 'Unique 제약조건';
+
+                // 더 안전한 고유 ID 생성 (날짜 + 랜덤)
+                const timestamp = Date.now().toString();
+                const random = Math.random().toString(36).substr(2, 4);
+                const retryId = `${apartmentName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${timestamp.slice(-6)}_${random}`;
+
+                if (confirm(`⚠️ ${errorType} 충돌이 발생했습니다!\n\n충돌 ID: ${finalApartmentId}\n오류: ${error.message}\n\n더 안전한 고유 ID로 재시도할까요?\n새 ID: ${retryId}`)) {
                     document.getElementById('newApartmentId').value = retryId;
-                    alert('🔄 고유 ID로 자동 설정되었습니다. 다시 "아파트 추가" 버튼을 클릭해주세요.');
+                    alert('🔄 안전한 고유 ID로 설정되었습니다. 다시 "아파트 추가" 버튼을 클릭해주세요.');
                     document.getElementById('newApartmentId').focus();
                 } else {
+                    alert('❌ 생성이 취소되었습니다. 수동으로 다른 ID를 입력해주세요.');
                     document.getElementById('newApartmentId').value = '';
                     document.getElementById('newApartmentId').focus();
                 }
