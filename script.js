@@ -2878,9 +2878,10 @@ async function addNewApartment() {
         // Supabase에 안전한 삽입 (Primary Key 충돌 방지)
         console.log('🔒 Primary Key 안전 삽입 시도...');
 
-        // id 필드는 SERIAL PRIMARY KEY로 자동 생성되므로 제외
+        // 실제 테이블 구조: id는 TEXT PRIMARY KEY (자동 생성 아님)
         const insertData = {
-            apartment_id: finalApartmentId, // UNIQUE 제약 조건만 있음
+            id: finalApartmentId,              // ✅ Primary Key에 설정
+            apartment_id: finalApartmentId,    // ✅ 기존 로직 호환성 유지
             apartment_name: apartmentName,
             title: finalTitle,
             subtitle: finalSubtitle,
@@ -2888,8 +2889,8 @@ async function addNewApartment() {
             dealer_code: '', // 대리점 코드 (추후 설정)
             phones: [],
             emails: []
-            // id는 PostgreSQL SERIAL로 자동 생성됨 - 명시적으로 지정하지 않음
-            // entry_issue 필드 제거됨 (대리점 관리에서 제외)
+            // 실제 테이블에서 id는 TEXT 타입의 Primary Key
+            // apartment_id와 같은 값을 사용하여 기존 데이터와 호환성 유지
         };
 
         // 단순화된 INSERT 방식 - upsert 사용으로 근본 해결
@@ -2898,7 +2899,7 @@ async function addNewApartment() {
         const { data, error } = await supabaseClient
             .from('admin_settings')
             .upsert([insertData], {
-                onConflict: 'apartment_id',
+                onConflict: 'id',  // Primary Key인 id로 변경
                 ignoreDuplicates: false
             })
             .select();
@@ -2912,17 +2913,18 @@ async function addNewApartment() {
                 const random = Math.random().toString(36).substr(2, 6);
                 const autoId = `apt_${timestamp.slice(-8)}_${random}`;
 
-                console.log(`🔄 자동 고유 ID 생성: ${insertData.apartment_id} → ${autoId}`);
+                console.log(`🔄 자동 고유 ID 생성: ${insertData.id} → ${autoId}`);
 
                 if (confirm(`⚠️ ID가 이미 존재합니다!\n\n자동 생성된 고유 ID로 계속할까요?\n새 ID: ${autoId}`)) {
-                    insertData.apartment_id = autoId;
+                    insertData.id = autoId;              // Primary Key 업데이트
+                    insertData.apartment_id = autoId;    // 호환성 유지
                     document.getElementById('newApartmentId').value = autoId;
 
                     // 재시도
                     const { data: retryData, error: retryError } = await supabaseClient
                         .from('admin_settings')
                         .upsert([insertData], {
-                            onConflict: 'apartment_id',
+                            onConflict: 'id',  // Primary Key로 변경
                             ignoreDuplicates: false
                         })
                         .select();
