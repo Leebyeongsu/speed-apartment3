@@ -47,9 +47,7 @@
         </div>
     </div>
 
-    <div class="main-layout">
-        <!-- 왼쪽: 기존 컨테이너 -->
-        <div class="container">
+    <div class="container">
             <header>
                 <h1 id="mainTitle" onclick="editTitle()" style="cursor: pointer; user-select: none;" title="클릭하여 제목 수정">📡 Speed 아파트 3단지 통신 환경 개선 신청서</h1>
             <p id="mainSubtitle" style="cursor: default; user-select: none;">신청서를 작성하여 제출해 주세요</p>
@@ -123,6 +121,7 @@
                     <button type="button" class="share-btn" onclick="shareToKakao()">카카오톡 공유</button>
                     <button type="button" class="qr-btn" id="qrGenerateBtn" onclick="generatePageQR()">📱 QR 코드 생성</button>
                     <button type="button" class="qr-btn" id="qrDeleteBtn" onclick="deleteQR()" style="display: none;">🗑️ QR 코드 삭제</button>
+                    <button type="button" class="data-status-btn" onclick="showApartmentDataModal()">📊 아파트 관리 현황</button>
                 </div>
 
                 <!-- 고객용: 신청서 제출 버튼 -->
@@ -297,6 +296,44 @@
             </div>
         </div>
 
+        <!-- 아파트 관리 현황 모달 -->
+        <div id="apartmentDataModal" class="modal" style="display: none;">
+            <div class="modal-content data-modal-content">
+                <span class="close-modal" onclick="closeApartmentDataModal()">×</span>
+                <div class="data-modal-header">
+                    <h2>📊 아파트 관리 현황</h2>
+                    <button type="button" class="refresh-btn" onclick="loadApartmentData()">🔄 새로고침</button>
+                </div>
+                <div class="data-modal-body">
+                    <div class="table-wrapper">
+                        <table id="apartmentDataTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>아파트명</th>
+                                    <th>대리점명</th>
+                                    <th>업데이트</th>
+                                </tr>
+                            </thead>
+                            <tbody id="apartmentTableBody">
+                                <tr class="loading-row">
+                                    <td colspan="3">
+                                        <div class="loading-spinner">
+                                            <div class="spinner"></div>
+                                            <span>데이터 로딩 중...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="data-modal-footer">
+                    <span id="tableRowCount">총 0개 아파트</span>
+                    <span id="lastUpdate">마지막 업데이트: -</span>
+                </div>
+            </div>
+        </div>
+
         <div id="result" class="result-section" style="display: none;">
             <h2>✅ 신청이 완료되었습니다!</h2>
             <div id="resultContent"></div>
@@ -309,41 +346,6 @@
             <div id="resultActions" class="result-actions">
                 <button type="button" class="share-btn" onclick="shareResultToKakao()">결과 카카오톡 공유</button>
                 <button type="button" class="new-btn" onclick="resetForm()">새 신청서 작성</button>
-            </div>
-        </div>
-
-        <!-- 오른쪽: 데이터 테이블 -->
-        <div class="data-table-section">
-            <div class="data-table-container">
-                <div class="table-header">
-                    <h2>📊 아파트 관리 현황</h2>
-                    <button type="button" class="refresh-btn" onclick="loadApartmentData()">🔄 새로고침</button>
-                </div>
-                <div class="table-wrapper">
-                    <table id="apartmentDataTable" class="data-table">
-                        <thead>
-                            <tr>
-                                <th>아파트명</th>
-                                <th>대리점명</th>
-                                <th>업데이트</th>
-                            </tr>
-                        </thead>
-                        <tbody id="apartmentTableBody">
-                            <tr class="loading-row">
-                                <td colspan="3">
-                                    <div class="loading-spinner">
-                                        <div class="spinner"></div>
-                                        <span>데이터 로딩 중...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="table-footer">
-                    <span id="tableRowCount">총 0개 아파트</span>
-                    <span id="lastUpdate">마지막 업데이트: -</span>
-                </div>
             </div>
         </div>
     </div>

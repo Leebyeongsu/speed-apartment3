@@ -16,18 +16,9 @@ body {
     touch-action: manipulation;
 }
 
-/* 메인 레이아웃 */
-.main-layout {
-    display: flex;
-    gap: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-    align-items: flex-start;
-}
-
 .container {
-    flex: 1;
     max-width: 600px;
+    margin: 0 auto;
     background: white;
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -578,8 +569,7 @@ header p {
 body[data-customer-mode="true"] #adminInputSection,
 body[data-customer-mode="true"] #adminActionSection,
 body[data-customer-mode="true"] #apartmentAddSection,
-body[data-customer-mode="true"] #dealerInfoSection,
-body[data-customer-mode="true"] .data-table-section {
+body[data-customer-mode="true"] #dealerInfoSection {
     display: none !important;
 }
 
@@ -587,15 +577,6 @@ body[data-customer-mode="true"] #customerSubmitSection {
     display: block !important;
 }
 
-/* 고객 모드일 때 메인 레이아웃을 단일 컨테이너로 변경 */
-body[data-customer-mode="true"] .main-layout {
-    flex-direction: column;
-    max-width: 600px;
-}
-
-body[data-customer-mode="true"] .container {
-    max-width: none;
-}
 
 /* 고객 모드일 때 폼 액션 영역 간소화 */
 body[data-customer-mode="true"] .form-actions {
@@ -645,6 +626,18 @@ body[data-customer-mode="true"] .form-actions .submit-btn:hover {
     background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(156, 39, 176, 0.3);
+}
+
+/* 데이터 상태 버튼 스타일 */
+.data-status-btn {
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    color: white;
+}
+
+.data-status-btn:hover {
+    background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
 }
 
 .qr-section {
@@ -1282,40 +1275,50 @@ body[data-customer-mode="true"] .form-actions .submit-btn:hover {
     }
 }
 
-/* 데이터 테이블 스타일 */
-.data-table-section {
-    flex: 0 0 400px;
-    min-width: 350px;
-    animation: slideUp 0.6s ease-out 0.2s both;
-}
-
-.data-table-container {
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
-    height: fit-content;
+/* 아파트 관리 현황 모달 스타일 */
+.data-modal-content {
+    max-width: 800px;
+    width: 90%;
     max-height: 80vh;
     display: flex;
     flex-direction: column;
 }
 
-.table-header {
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+.data-modal-header {
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
     color: white;
     padding: 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-radius: 10px 10px 0 0;
 }
 
-.table-header h2 {
+.data-modal-header h2 {
     margin: 0;
     font-size: 1.2rem;
     font-weight: 600;
 }
 
-.refresh-btn {
+.data-modal-body {
+    flex: 1;
+    overflow: hidden;
+    background: white;
+}
+
+.data-modal-footer {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #666;
+    border-top: 1px solid #e1e5e9;
+    border-radius: 0 0 10px 10px;
+}
+
+.data-modal-header .refresh-btn {
     background: rgba(255, 255, 255, 0.2);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -1326,15 +1329,15 @@ body[data-customer-mode="true"] .form-actions .submit-btn:hover {
     transition: all 0.3s ease;
 }
 
-.refresh-btn:hover {
+.data-modal-header .refresh-btn:hover {
     background: rgba(255, 255, 255, 0.3);
     transform: translateY(-1px);
 }
 
-.table-wrapper {
-    flex: 1;
+.data-modal-body .table-wrapper {
+    height: 50vh;
     overflow-y: auto;
-    max-height: 60vh;
+    padding: 0;
 }
 
 .data-table {
@@ -1439,36 +1442,28 @@ body[data-customer-mode="true"] .form-actions .submit-btn:hover {
     opacity: 0.5;
 }
 
-/* 반응형 디자인 */
-@media (max-width: 1024px) {
-    .main-layout {
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    .data-table-section {
-        flex: none;
-        min-width: auto;
-        order: -1;
-    }
-
-    .data-table-container {
-        max-height: 50vh;
-    }
-}
-
+/* 모달 반응형 디자인 */
 @media (max-width: 768px) {
-    .table-header {
+    .data-modal-content {
+        width: 95%;
+        max-height: 85vh;
+    }
+
+    .data-modal-header {
         padding: 15px;
     }
 
-    .table-header h2 {
+    .data-modal-header h2 {
         font-size: 1.1rem;
     }
 
-    .refresh-btn {
+    .data-modal-header .refresh-btn {
         padding: 6px 12px;
         font-size: 0.8rem;
+    }
+
+    .data-modal-body .table-wrapper {
+        height: 40vh;
     }
 
     .data-table th,
@@ -1477,7 +1472,7 @@ body[data-customer-mode="true"] .form-actions .submit-btn:hover {
         font-size: 0.85rem;
     }
 
-    .table-footer {
+    .data-modal-footer {
         padding: 12px 15px;
         font-size: 0.8rem;
         flex-direction: column;

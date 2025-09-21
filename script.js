@@ -3222,30 +3222,34 @@ function formatDateTime(dateString) {
     }
 }
 
-// 페이지 로드 시 데이터 자동 로드
-document.addEventListener('DOMContentLoaded', function() {
-    // 고객 모드인지 확인
-    const isCustomerMode = document.body.getAttribute('data-customer-mode') === 'true';
+// 아파트 관리 현황 모달 열기 함수
+function showApartmentDataModal() {
+    console.log('📊 아파트 관리 현황 모달 열기');
 
-    // 관리자 모드에서만 데이터 테이블 로드
-    if (!isCustomerMode) {
-        // 기존 초기화 코드 실행 후 데이터 테이블 로드
+    const modal = document.getElementById('apartmentDataModal');
+    if (modal) {
+        modal.style.display = 'block';
+
+        // 모달이 열릴 때 데이터 로드
         setTimeout(() => {
             loadApartmentData();
-        }, 1000); // 1초 후 로드 (Supabase 초기화 대기)
+        }, 200); // 모달 애니메이션 대기
+    } else {
+        console.error('❌ apartmentDataModal 요소를 찾을 수 없습니다.');
     }
-});
+}
 
-// 주기적 데이터 업데이트 (5분마다) - 관리자 모드에서만
-const dataUpdateInterval = setInterval(() => {
-    // 고객 모드인지 확인
-    const isCustomerMode = document.body.getAttribute('data-customer-mode') === 'true';
+// 아파트 관리 현황 모달 닫기 함수
+function closeApartmentDataModal() {
+    console.log('🚪 아파트 관리 현황 모달 닫기');
 
-    if (!isCustomerMode) {
-        console.log('🔄 주기적 데이터 업데이트');
-        loadApartmentData();
+    const modal = document.getElementById('apartmentDataModal');
+    if (modal) {
+        modal.style.display = 'none';
     }
-}, 5 * 60 * 1000); // 5분
+}
 
 // 전역 함수로 등록
 window.loadApartmentData = loadApartmentData;
+window.showApartmentDataModal = showApartmentDataModal;
+window.closeApartmentDataModal = closeApartmentDataModal;
