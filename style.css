@@ -16,9 +16,18 @@ body {
     touch-action: manipulation;
 }
 
-.container {
-    max-width: 600px;
+/* 메인 레이아웃 */
+.main-layout {
+    display: flex;
+    gap: 20px;
+    max-width: 1200px;
     margin: 0 auto;
+    align-items: flex-start;
+}
+
+.container {
+    flex: 1;
+    max-width: 600px;
     background: white;
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -1259,5 +1268,209 @@ body[data-customer-mode="true"] .form-actions .submit-btn:hover {
 
     .admin-section-title::after {
         right: -30px;
+    }
+}
+
+/* 데이터 테이블 스타일 */
+.data-table-section {
+    flex: 0 0 400px;
+    min-width: 350px;
+    animation: slideUp 0.6s ease-out 0.2s both;
+}
+
+.data-table-container {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    height: fit-content;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.table-header {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.refresh-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 8px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.table-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.data-table thead {
+    background: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.data-table th {
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #e1e5e9;
+}
+
+.data-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e1e5e9;
+    vertical-align: middle;
+}
+
+.data-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.data-table tbody tr:nth-child(even) {
+    background: #fafbfc;
+}
+
+.data-table tbody tr:nth-child(even):hover {
+    background: #f1f3f4;
+}
+
+/* 로딩 스피너 */
+.loading-row td {
+    text-align: center;
+    padding: 30px;
+}
+
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: #666;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e1e5e9;
+    border-top: 2px solid #4CAF50;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.table-footer {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #666;
+    border-top: 1px solid #e1e5e9;
+}
+
+/* 업데이트 시간 스타일 */
+.update-time {
+    font-size: 0.8rem;
+    color: #888;
+    white-space: nowrap;
+}
+
+/* 빈 상태 메시지 */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.empty-state-icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    opacity: 0.5;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+    .main-layout {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .data-table-section {
+        flex: none;
+        min-width: auto;
+        order: -1;
+    }
+
+    .data-table-container {
+        max-height: 50vh;
+    }
+}
+
+@media (max-width: 768px) {
+    .table-header {
+        padding: 15px;
+    }
+
+    .table-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .refresh-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 10px 8px;
+        font-size: 0.85rem;
+    }
+
+    .table-footer {
+        padding: 12px 15px;
+        font-size: 0.8rem;
+        flex-direction: column;
+        gap: 5px;
+        align-items: flex-start;
     }
 }

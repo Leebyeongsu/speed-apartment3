@@ -3057,3 +3057,184 @@ window.shareToKakao = function() {
         alert('카카오톡 공유 기능을 사용할 수 없습니다.');
     }
 };
+
+// =====================================
+// 데이터 테이블 관련 함수들
+// =====================================
+
+// 아파트 데이터 로드 함수
+async function loadApartmentData() {
+    console.log('📊 아파트 데이터 로드 시작');
+
+    const tableBody = document.getElementById('apartmentTableBody');
+    const rowCountElement = document.getElementById('tableRowCount');
+    const lastUpdateElement = document.getElementById('lastUpdate');
+
+    // 로딩 상태 표시
+    showLoadingState();
+
+    try {
+        // Supabase 클라이언트 확인
+        let supabaseClient = supabase;
+        if (!supabaseClient) {
+            console.log('🔧 Supabase 클라이언트 초기화 중...');
+            if (typeof window.initializeSupabase === 'function') {
+                supabaseClient = await window.initializeSupabase();
+            } else {
+                // 직접 초기화
+                const supabaseUrl = 'https://boorsqnfkwglzvnhtwcx.supabase.co';
+                const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvb3JzcW5ma3dnbHp2bmh0d2N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NDE3NDEsImV4cCI6MjA3MjExNzc0MX0.eU0BSY8u1b-qcx3OTgvGIW-EQHotI4SwNuWAg0eqed0';
+                supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+            }
+        }
+
+        // admin_settings 테이블에서 데이터 조회
+        console.log('🔍 Supabase에서 아파트 데이터 조회 중...');
+        const { data, error } = await supabaseClient
+            .from('admin_settings')
+            .select('apartment_name, agency_name, updated_at')
+            .order('updated_at', { ascending: false });
+
+        if (error) {
+            console.error('❌ 데이터 로드 오류:', error);
+            showErrorState('데이터를 불러오는 중 오류가 발생했습니다.');
+            return;
+        }
+
+        console.log('✅ 아파트 데이터 로드 성공:', data);
+
+        // 테이블 업데이트
+        updateDataTable(data);
+
+        // 카운터 및 업데이트 시간 표시
+        rowCountElement.textContent = `총 ${data.length}개 아파트`;
+        lastUpdateElement.textContent = `마지막 업데이트: ${new Date().toLocaleString('ko-KR')}`;
+
+    } catch (error) {
+        console.error('💥 아파트 데이터 로드 중 예외:', error);
+        showErrorState('데이터 로드 중 오류가 발생했습니다.');
+    }
+}
+
+// 로딩 상태 표시 함수
+function showLoadingState() {
+    const tableBody = document.getElementById('apartmentTableBody');
+    tableBody.innerHTML = `
+        <tr class="loading-row">
+            <td colspan="3">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <span>데이터 로딩 중...</span>
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+// 오류 상태 표시 함수
+function showErrorState(message) {
+    const tableBody = document.getElementById('apartmentTableBody');
+    tableBody.innerHTML = `
+        <tr class="error-row">
+            <td colspan="3">
+                <div class="empty-state">
+                    <div class="empty-state-icon">⚠️</div>
+                    <div>${message}</div>
+                    <button onclick="loadApartmentData()" style="margin-top: 10px; padding: 5px 10px; border: 1px solid #ddd; border-radius: 5px; background: white; cursor: pointer;">다시 시도</button>
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+// 빈 상태 표시 함수
+function showEmptyState() {
+    const tableBody = document.getElementById('apartmentTableBody');
+    tableBody.innerHTML = `
+        <tr class="empty-row">
+            <td colspan="3">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🏢</div>
+                    <div>등록된 아파트가 없습니다</div>
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+// 데이터 테이블 업데이트 함수
+function updateDataTable(data) {
+    const tableBody = document.getElementById('apartmentTableBody');
+
+    if (!data || data.length === 0) {
+        showEmptyState();
+        return;
+    }
+
+    // 테이블 행 생성
+    const rows = data.map(item => {
+        const apartmentName = item.apartment_name || '-';
+        const agencyName = item.agency_name || '-';
+        const updatedAt = item.updated_at ? formatDateTime(item.updated_at) : '-';
+
+        return `
+            <tr>
+                <td>${apartmentName}</td>
+                <td>${agencyName}</td>
+                <td class="update-time">${updatedAt}</td>
+            </tr>
+        `;
+    }).join('');
+
+    tableBody.innerHTML = rows;
+}
+
+// 날짜/시간 포맷 함수
+function formatDateTime(dateString) {
+    if (!dateString) return '-';
+
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMinutes = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMinutes / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffMinutes < 1) {
+            return '방금 전';
+        } else if (diffMinutes < 60) {
+            return `${diffMinutes}분 전`;
+        } else if (diffHours < 24) {
+            return `${diffHours}시간 전`;
+        } else if (diffDays < 7) {
+            return `${diffDays}일 전`;
+        } else {
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+    } catch (error) {
+        console.error('날짜 형식 변환 오류:', error);
+        return '-';
+    }
+}
+
+// 페이지 로드 시 데이터 자동 로드
+document.addEventListener('DOMContentLoaded', function() {
+    // 기존 초기화 코드 실행 후 데이터 테이블 로드
+    setTimeout(() => {
+        loadApartmentData();
+    }, 1000); // 1초 후 로드 (Supabase 초기화 대기)
+});
+
+// 주기적 데이터 업데이트 (5분마다)
+setInterval(() => {
+    console.log('🔄 주기적 데이터 업데이트');
+    loadApartmentData();
+}, 5 * 60 * 1000); // 5분
+
+// 전역 함수로 등록
+window.loadApartmentData = loadApartmentData;
