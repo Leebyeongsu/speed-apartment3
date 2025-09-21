@@ -577,6 +577,18 @@ body[data-customer-mode="true"] #customerSubmitSection {
     display: block !important;
 }
 
+/* 관리자 모드일 때 관리자 요소들 확실히 표시 */
+body[data-customer-mode="false"] #adminInputSection,
+body[data-customer-mode="false"] #adminActionSection,
+body[data-customer-mode="false"] #apartmentAddSection,
+body[data-customer-mode="false"] #dealerInfoSection {
+    display: block !important;
+    visibility: visible !important;
+}
+
+body[data-customer-mode="false"] #customerSubmitSection {
+    display: none !important;
+}
 
 /* 고객 모드일 때 폼 액션 영역 간소화 */
 body[data-customer-mode="true"] .form-actions {

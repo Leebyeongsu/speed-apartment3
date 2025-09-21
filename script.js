@@ -2080,7 +2080,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // URL 파라미터 확인하여 고객용/관리자용 모드 결정
     const urlParams = new URLSearchParams(window.location.search);
-    const isCustomerMode = urlParams.has('customer') || urlParams.has('apply') || urlParams.get('mode') === 'customer';
+    const isCustomerMode = urlParams.get('mode') === 'customer';
+
+    console.log('🔍 URL 파라미터 확인:', {
+        currentURL: window.location.href,
+        mode: urlParams.get('mode'),
+        isCustomerMode: isCustomerMode
+    });
 
 
     // 고객용 모드인 경우 QR 생성 버튼과 카카오톡 공유 버튼, 문자 버튼 숨기고 제출 버튼 텍스트 변경
@@ -2186,10 +2192,63 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('고객용 모드로 실행됨');
     } else {
-        // 관리자용 모드일 때 고객용 제출 버튼 숨기기
-        const customerSubmitSection = document.getElementById('customerSubmitSection');
-        if (customerSubmitSection) customerSubmitSection.style.display = 'none';
-        
+        // 관리자 모드 명시적 설정
+        document.body.setAttribute('data-customer-mode', 'false');
+        console.log('🔧 관리자 모드가 활성화되었습니다.');
+
+        // 관리자용 요소들 확실히 표시
+        function setupAdminMode() {
+            const adminInputSection = document.getElementById('adminInputSection');
+            const adminActionSection = document.getElementById('adminActionSection');
+            const apartmentAddSection = document.getElementById('apartmentAddSection');
+            const dealerInfoSection = document.getElementById('dealerInfoSection');
+            const customerSubmitSection = document.getElementById('customerSubmitSection');
+
+            // 관리자 요소들 표시
+            if (adminInputSection) {
+                adminInputSection.style.display = 'block';
+                adminInputSection.style.visibility = 'visible';
+                adminInputSection.classList.remove('customer-mode-hidden');
+            }
+
+            if (adminActionSection) {
+                adminActionSection.style.display = 'block';
+                adminActionSection.style.visibility = 'visible';
+                adminActionSection.classList.remove('customer-mode-hidden');
+                console.log('✅ adminActionSection 표시됨');
+            }
+
+            if (apartmentAddSection) {
+                apartmentAddSection.style.display = 'block';
+                apartmentAddSection.style.visibility = 'visible';
+                apartmentAddSection.classList.remove('customer-mode-hidden');
+            }
+
+            if (dealerInfoSection) {
+                dealerInfoSection.style.display = 'block';
+                dealerInfoSection.style.visibility = 'visible';
+                dealerInfoSection.classList.remove('customer-mode-hidden');
+            }
+
+            // 고객용 제출 버튼 숨기기
+            if (customerSubmitSection) {
+                customerSubmitSection.style.display = 'none';
+                customerSubmitSection.style.visibility = 'hidden';
+            }
+        }
+
+        // DOM이 준비되었는지 확인 후 실행
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupAdminMode);
+        } else {
+            setupAdminMode();
+        }
+
+        // 페이지 로드 완료 후에도 여러 번 실행하여 확실히 적용
+        setTimeout(setupAdminMode, 100);
+        setTimeout(setupAdminMode, 500);
+        setTimeout(setupAdminMode, 1000);
+
         console.log('관리자용 모드로 실행됨');
     }
     
