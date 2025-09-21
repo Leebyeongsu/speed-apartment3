@@ -3224,16 +3224,27 @@ function formatDateTime(dateString) {
 
 // 페이지 로드 시 데이터 자동 로드
 document.addEventListener('DOMContentLoaded', function() {
-    // 기존 초기화 코드 실행 후 데이터 테이블 로드
-    setTimeout(() => {
-        loadApartmentData();
-    }, 1000); // 1초 후 로드 (Supabase 초기화 대기)
+    // 고객 모드인지 확인
+    const isCustomerMode = document.body.getAttribute('data-customer-mode') === 'true';
+
+    // 관리자 모드에서만 데이터 테이블 로드
+    if (!isCustomerMode) {
+        // 기존 초기화 코드 실행 후 데이터 테이블 로드
+        setTimeout(() => {
+            loadApartmentData();
+        }, 1000); // 1초 후 로드 (Supabase 초기화 대기)
+    }
 });
 
-// 주기적 데이터 업데이트 (5분마다)
-setInterval(() => {
-    console.log('🔄 주기적 데이터 업데이트');
-    loadApartmentData();
+// 주기적 데이터 업데이트 (5분마다) - 관리자 모드에서만
+const dataUpdateInterval = setInterval(() => {
+    // 고객 모드인지 확인
+    const isCustomerMode = document.body.getAttribute('data-customer-mode') === 'true';
+
+    if (!isCustomerMode) {
+        console.log('🔄 주기적 데이터 업데이트');
+        loadApartmentData();
+    }
 }, 5 * 60 * 1000); // 5분
 
 // 전역 함수로 등록

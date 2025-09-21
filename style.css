@@ -578,12 +578,23 @@ header p {
 body[data-customer-mode="true"] #adminInputSection,
 body[data-customer-mode="true"] #adminActionSection,
 body[data-customer-mode="true"] #apartmentAddSection,
-body[data-customer-mode="true"] #dealerInfoSection {
+body[data-customer-mode="true"] #dealerInfoSection,
+body[data-customer-mode="true"] .data-table-section {
     display: none !important;
 }
 
 body[data-customer-mode="true"] #customerSubmitSection {
     display: block !important;
+}
+
+/* 고객 모드일 때 메인 레이아웃을 단일 컨테이너로 변경 */
+body[data-customer-mode="true"] .main-layout {
+    flex-direction: column;
+    max-width: 600px;
+}
+
+body[data-customer-mode="true"] .container {
+    max-width: none;
 }
 
 /* 고객 모드일 때 폼 액션 영역 간소화 */
