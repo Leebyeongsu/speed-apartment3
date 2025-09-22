@@ -1422,12 +1422,16 @@ async function processCustomerFormSubmission(event) {
 function editTitle() {
     const titleElement = document.getElementById('mainTitle');
     const currentTitle = titleElement.textContent;
-    
-    titleElement.innerHTML = `
-        <input type="text" id="titleInput" value="${currentTitle}" style="width: 100%; padding: 8px; border: 2px solid #4CAF50; border-radius: 4px; font-size: 18px; font-weight: bold;">
-    `;
-    
-    const titleInput = document.getElementById('titleInput');
+    // 기존 내용을 제거하고 안전하게 input 요소를 생성
+    titleElement.textContent = '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'titleInput';
+    input.value = currentTitle;
+    input.style.cssText = 'width: 100%; padding: 8px; border: 2px solid #4CAF50; border-radius: 4px; font-size: 18px; font-weight: bold;';
+    titleElement.appendChild(input);
+
+    const titleInput = input;
     titleInput.focus();
     titleInput.select();
     
@@ -1461,7 +1465,7 @@ function saveTitle() {
     
     // 제목 업데이트 및 편집 모드 해제
     const titleElement = document.getElementById('mainTitle');
-    titleElement.innerHTML = newTitle;
+    titleElement.textContent = newTitle;
     titleElement.onclick = editTitle;
     
     // Supabase에 저장
@@ -1476,7 +1480,7 @@ function cancelTitleEdit() {
     const savedTitle = localStorage.getItem('mainTitle') || 'Speed 아파트 통신 환경 개선 신청서';
     
     // 편집 모드 해제하고 원래 상태로 복원
-    titleElement.innerHTML = savedTitle;
+    titleElement.textContent = savedTitle;
     titleElement.onclick = editTitle;
 }
 
@@ -1489,12 +1493,23 @@ function showEmailInputModal() {
     
     // 기존 입력란 초기화
     const emailInputs = document.getElementById('emailInputs');
-    emailInputs.innerHTML = `
-        <div class="email-input-row">
-            <input type="email" class="email-input" placeholder="example1@email.com">
-            <button type="button" class="remove-btn" onclick="removeEmailInput(this)" style="display: none;">삭제</button>
-        </div>
-    `;
+    // innerHTML 대신 안전하게 DOM 요소 생성
+    emailInputs.innerHTML = '';
+    const row = document.createElement('div');
+    row.className = 'email-input-row';
+    const input = document.createElement('input');
+    input.type = 'email';
+    input.className = 'email-input';
+    input.placeholder = 'example1@email.com';
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = '삭제';
+    removeBtn.style.display = 'none';
+    removeBtn.addEventListener('click', function() { removeEmailInput(this); });
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    emailInputs.appendChild(row);
     
     // 저장된 메일 주소 불러오기
     const savedEmails = JSON.parse(localStorage.getItem('savedEmailAddresses') || '[]');
@@ -1521,16 +1536,29 @@ function addEmailInput() {
     
     const newRow = document.createElement('div');
     newRow.className = 'email-input-row';
-    newRow.innerHTML = `
-        <input type="email" class="email-input" placeholder="example${emailRows.length + 1}@email.com">
-        <button type="button" class="remove-btn" onclick="removeEmailInput(this)">삭제</button>
-    `;
+    const input = document.createElement('input');
+    input.type = 'email';
+    input.className = 'email-input';
+    input.placeholder = `example${emailRows.length + 1}@email.com`;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'remove-btn';
+    btn.textContent = '삭제';
+    btn.addEventListener('click', function() { removeEmailInput(this); });
+
+    newRow.appendChild(input);
+    newRow.appendChild(btn);
     
     emailInputs.appendChild(newRow);
     
     // 삭제 버튼 표시/숨김 조정
-    if (emailRows.length === 0) {
-        emailInputs.querySelector('.remove-btn').style.display = 'none';
+    // 삭제 버튼 보이기/숨기기: 하나만 있을 땐 숨김
+    const removeButtons = emailInputs.querySelectorAll('.remove-btn');
+    if (emailInputs.querySelectorAll('.email-input-row').length <= 1) {
+        removeButtons.forEach(b => b.style.display = 'none');
+    } else {
+        removeButtons.forEach(b => b.style.display = 'inline-block');
     }
 }
 
@@ -1629,18 +1657,34 @@ function addPhoneInput() {
 
     const newRow = document.createElement('div');
     newRow.className = 'phone-input-row';
-    newRow.innerHTML = `
-        <input type="tel" class="phone-input" placeholder="010-1234-5678">
-        <button type="button" class="remove-btn" onclick="removePhoneInput(this)">삭제</button>
-    `;
+    const input = document.createElement('input');
+    input.type = 'tel';
+    input.className = 'phone-input';
+    input.placeholder = '010-1234-5678';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'remove-btn';
+    btn.textContent = '삭제';
+    btn.addEventListener('click', function() { removePhoneInput(this); });
+
+    newRow.appendChild(input);
+    newRow.appendChild(btn);
 
     phoneInputs.appendChild(newRow);
 
-    // 새로 추가된 입력 필드에 포맷팅 적용
+    // 새로 추가된 입력 필드에 포맷팅 적용 및 삭제 버튼 표시 조정
     const newInput = newRow.querySelector('.phone-input');
     if (newInput) {
         newInput.addEventListener('input', handlePhoneInput);
         newInput.addEventListener('blur', handlePhoneBlur);
+    }
+
+    const removeButtons = phoneInputs.querySelectorAll('.remove-btn');
+    if (phoneInputs.querySelectorAll('.phone-input-row').length <= 1) {
+        removeButtons.forEach(b => b.style.display = 'none');
+    } else {
+        removeButtons.forEach(b => b.style.display = 'inline-block');
     }
 
     // 삭제 버튼 표시/숨김 조정
