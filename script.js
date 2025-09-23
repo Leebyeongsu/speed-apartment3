@@ -1,7 +1,21 @@
 // Supabase 설정은 supabase-config.js에서 전역 변수로 제공됨
 
-// 아파트 ID 설정 (고유 식별자) - speed_apartment3로 변경
-const APARTMENT_ID = 'speed_apartment3';
+// 현재 페이지의 아파트 ID 추출 (쿼리 ?apartment=ID 또는 해시 #/슬러그)
+function getCurrentApartmentId() {
+    try {
+        const url = new URL(window.location.href);
+        const qp = new URLSearchParams(url.search);
+        if (qp.has('apartment')) return qp.get('apartment');
+        const hash = (url.hash || '').replace(/^#\/?/, '');
+        if (hash) return hash;
+    } catch (e) {
+        console.warn('getCurrentApartmentId 실패:', e);
+    }
+    return 'speed_apartment3';
+}
+
+// 아파트 ID 설정 (동적)
+const APARTMENT_ID = getCurrentApartmentId();
 
 // 동적으로 로드될 아파트 이름 (기본값 설정)
 let currentApartmentName = 'Speed 아파트 3단지';
@@ -494,7 +508,7 @@ async function saveAdminSettingsToCloud() {
         }
 
         const settings = {
-            apartment_id: APARTMENT_ID,  // speed_apartment3 사용
+            apartment_id: getCurrentApartmentId(),
             title: localStorage.getItem('mainTitle') || '',
             phones: JSON.parse(localStorage.getItem('savedPhoneNumbers') || '[]'),
             emails: JSON.parse(localStorage.getItem('savedEmailAddresses') || '[]'),
@@ -533,7 +547,7 @@ async function loadAdminSettingsFromCloud() {
         const { data, error } = await supabase
             .from('admin_settings')
             .select('apartment_name, title, subtitle, phones, emails')
-            .eq('apartment_id', APARTMENT_ID)  // speed_apartment3 조건으로 검색
+            .eq('apartment_id', getCurrentApartmentId())
             .single();
         
         if (error && error.code !== 'PGRST116') { // 데이터가 없는 경우가 아닌 실제 오류
@@ -1125,7 +1139,7 @@ async function sendNotificationsViaEdgeFunction(applicationData) {
         const { data: adminCheck, error: adminError } = await supabase
             .from('admin_settings')
             .select('emails')
-            .eq('apartment_id', APARTMENT_ID)  // speed_apartment3로 검색
+            .eq('apartment_id', getCurrentApartmentId())
             .single();
 
         if (adminError || !adminCheck?.emails || adminCheck.emails.length === 0) {
@@ -1790,12 +1804,17 @@ function generatePageQR() {
     }
     
     // 고객용 URL 생성 (간단하게)
-    const currentUrl = window.location.origin + window.location.pathname;
-    // 현재 debug 모드인지 확인
     const isDebugMode = new URLSearchParams(window.location.search).get('debug') === 'true';
-    const customerUrl = isDebugMode ? 
-        `${currentUrl}?debug=true&mode=customer` : 
-        `${currentUrl}?mode=customer`;
+    // 현재 아파트 이름을 제목 또는 저장된 값에서 유추하여 슬러그 생성
+    const nameFromTitle = (localStorage.getItem('mainTitle') || '').replace(/ 통신 환경 개선 신청서$/, '');
+    const fallbackName = currentApartmentName || nameFromTitle || '아파트';
+    const nameSlug = fallbackName.trim()
+        .replace(/\s+/g, '-')
+        .replace(/[^\uAC00-\uD7A3a-zA-Z0-9\-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$|_/g, '');
+    const base = `${window.location.protocol}//hhofutures.store`;
+    const customerUrl = isDebugMode ? `${base}/#/${nameSlug}?debug=true&mode=customer` : `${base}/#/${nameSlug}?mode=customer`;
     
     console.log('QR 코드용 단순화된 URL:', customerUrl);
     console.log('URL 길이:', customerUrl.length, '자');
@@ -2973,8 +2992,8 @@ async function addNewApartment() {
         const finalApartmentId = apartmentId;
 
         // 기본값 설정
-        const finalTitle = apartmentTitle || `${apartmentName} 통신 환경 개선 신청서`;
-        const finalSubtitle = apartmentSubtitle || '신청서를 작성하여 제출해 주세요';
+        const finalTitle = `${apartmentName} 통신 환경 개선 신청서`;
+        const finalSubtitle = '신청서를 작성하여 제출해 주세요';
 
         console.log('💾 Supabase에 안전한 데이터 삽입 중...');
         console.log('🔍 삽입할 데이터:', {
@@ -3084,8 +3103,16 @@ async function addNewApartment() {
 
         // 성공 메시지와 URL 정보 제공 (최종 확정 ID 사용)
         const confirmedApartmentId = insertData.apartment_id; // 최종 성공한 ID
-        const newApartmentUrl = `${window.location.origin}${window.location.pathname}?apartment=${confirmedApartmentId}`;
-        const customerUrl = `${window.location.origin}${window.location.pathname}?apartment=${confirmedApartmentId}&mode=customer`;
+        // 아파트 이름 기반 해시 슬러그 생성 (한글/영문/숫자, 하이픈 허용)
+        const nameSlug = (apartmentName || '')
+            .trim()
+            .replace(/\s+/g, '-')
+            .replace(/[^\uAC00-\uD7A3a-zA-Z0-9\-]/g, '')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$|_/g, '');
+        const base = `${window.location.protocol}//hhofutures.store`;
+        const newApartmentUrl = `${base}/#/${nameSlug}`;
+        const customerUrl = `${base}/#/${nameSlug}?mode=customer`;
 
         alert(`✅ ${apartmentName}이(가) 안전하게 생성되었습니다!\n\n` +
               `🔑 최종 ID: ${confirmedApartmentId}\n` +
