@@ -3,11 +3,20 @@
 // 현재 페이지의 아파트 ID 추출 (쿼리 ?apartment=ID 또는 해시 #/슬러그)
 function getCurrentApartmentId() {
     try {
+        if (typeof window !== 'undefined' && window.__activeApartmentId) {
+            return window.__activeApartmentId;
+        }
         const url = new URL(window.location.href);
         const qp = new URLSearchParams(url.search);
         if (qp.has('apartment')) return qp.get('apartment');
         const hash = (url.hash || '').replace(/^#\/?/, '');
         if (hash) return hash;
+        try {
+            const saved = localStorage.getItem('currentApartmentId');
+            if (saved) return saved;
+        } catch (e) {
+            // ignore
+        }
     } catch (e) {
         console.warn('getCurrentApartmentId 실패:', e);
     }
@@ -1843,7 +1852,13 @@ function generatePageQR() {
     // 한글 등 비ASCII가 포함된 슬러그는 QR 용량을 크게 만들 수 있으므로
     // QR에는 항상 ID 기반 짧은 URL을 사용한다.
     const base = `${window.location.protocol}//hhofutures.store`;
-    const idForQR = getCurrentApartmentId();
+    const idForQR = (function(){
+        const fromParam = getCurrentApartmentId();
+        if (fromParam && fromParam !== 'speed_apartment3') return fromParam;
+        try { if (window.__activeApartmentId) return window.__activeApartmentId; } catch(e){}
+        try { const saved = localStorage.getItem('currentApartmentId'); if (saved) return saved; } catch(e){}
+        return fromParam;
+    })();
     const customerUrl = isDebugMode
         ? `${base}/?mode=customer&debug=true#/${encodeURIComponent(idForQR)}`
         : `${base}/?mode=customer#/${encodeURIComponent(idForQR)}`;
@@ -3177,6 +3192,10 @@ async function addNewApartment() {
 
         // 성공 메시지와 URL 정보 제공 (최종 확정 ID 사용)
         const confirmedApartmentId = insertData.apartment_id; // 최종 성공한 ID
+        try {
+            localStorage.setItem('currentApartmentId', confirmedApartmentId);
+            window.__activeApartmentId = confirmedApartmentId;
+        } catch (e) { /* ignore */ }
         // 아파트 이름 기반 해시 슬러그 생성 (한글/영문/숫자, 하이픈 허용)
         const nameSlug = (apartmentName || '')
             .trim()
