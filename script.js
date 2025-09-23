@@ -2766,9 +2766,7 @@ function resetApartmentForm() {
     
     // 모든 입력 필드 초기화
     const fields = [
-        'newApartmentName',
-        'newApartmentTitle',
-        'newApartmentSubtitle'
+        'newApartmentName'
     ];
     
     fields.forEach(fieldId => {
@@ -2895,8 +2893,9 @@ async function addNewApartment() {
     try {
         // 입력값 수집 및 검증
         const apartmentName = document.getElementById('newApartmentName').value.trim();
-        const apartmentTitle = document.getElementById('newApartmentTitle').value.trim();
-        const apartmentSubtitle = document.getElementById('newApartmentSubtitle').value.trim();
+        // 제목/부제목 입력 필드는 제거되었으므로 기본값을 코드에서 생성
+        const apartmentTitle = '';
+        const apartmentSubtitle = '';
 
         // 아파트 ID 자동 생성 (아파트 이름 기반)
         const timestamp = Date.now().toString();
