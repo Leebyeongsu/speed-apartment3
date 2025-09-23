@@ -1815,10 +1815,15 @@ function generatePageQR() {
         .replace(/^-|-$|_/g, '')
         .slice(0, 64);
     const base = `${window.location.protocol}//hhofutures.store`;
-    // 고객 모드 URL 형식: https://hhofutures.store/#/{slug}?mode=customer
-    const customerUrl = isDebugMode
+    // 기본: 슬러그 기반 고객 URL
+    let candidateUrl = isDebugMode
         ? `${base}/#/${nameSlug}?mode=customer&debug=true`
         : `${base}/#/${nameSlug}?mode=customer`;
+    // 길이 또는 비ASCII 확대로 인한 오버플로우 대비: ID 기반 짧은 URL 폴백
+    const idBasedUrl = isDebugMode
+        ? `${base}/#/${APARTMENT_ID}?mode=customer&debug=true`
+        : `${base}/#/${APARTMENT_ID}?mode=customer`;
+    const customerUrl = candidateUrl.length <= 300 ? candidateUrl : idBasedUrl;
     
     console.log('QR 코드용 단순화된 URL:', customerUrl);
     console.log('URL 길이:', customerUrl.length, '자');
@@ -1826,10 +1831,8 @@ function generatePageQR() {
     // URL이 너무 긴 경우 더 단축 (보수적으로 300자 초과 시 단축)
     if (customerUrl.length > 300) {
         console.warn('URL이 너무 깁니다. 더 단축합니다.');
-        // 짧은 URL 사용: 동일 형식 유지
-        const shortUrl = isDebugMode ? 
-            `${base}/#/${nameSlug}?mode=customer&debug=true` :
-            `${base}/#/${nameSlug}?mode=customer`;
+        // 짧은 URL 사용: ID 기반으로 강제 축소
+        const shortUrl = idBasedUrl;
         console.log('더 단축된 URL:', shortUrl, '길이:', shortUrl.length);
         return generateQRWithShortUrl(shortUrl, qrCodeDiv, qrSection, qrDeleteBtn);
     }
@@ -1838,15 +1841,20 @@ function generatePageQR() {
         console.log('QR 코드 생성 시작');
         qrCodeDiv.innerHTML = '';
         
+        // QR 텍스트를 바이트 길이 기준으로 검증 (UTF-8)
+        const encoder = new TextEncoder();
+        const byteLen = encoder.encode(customerUrl).length;
+        console.log('QR 텍스트 바이트 길이:', byteLen);
+
         new QRCode(qrCodeDiv, {
             text: customerUrl,
-            width: 250,
-            height: 250,
+            width: 256,
+            height: 256,
             colorDark: "#000000",
             colorLight: "#FFFFFF",
-            // 길이 초과 방지 위해 정정률을 L로 설정
+            // 최대로 여유 있게: 낮은 정정률(L)
             correctLevel: QRCode.CorrectLevel.L,
-            margin: 2
+            margin: 1
         });
         
         console.log('QR 코드 생성 완료');
@@ -1878,13 +1886,13 @@ function generateQRWithShortUrl(shortUrl, qrCodeDiv, qrSection, qrDeleteBtn) {
         
         new QRCode(qrCodeDiv, {
             text: shortUrl,
-            width: 250,
-            height: 250,
+            width: 256,
+            height: 256,
             colorDark: "#000000",
             colorLight: "#FFFFFF",
             // 길이 안정성 우선: L
             correctLevel: QRCode.CorrectLevel.L,
-            margin: 2
+            margin: 1
         });
         
         console.log('짧은 URL QR 코드 생성 완료');
@@ -1916,8 +1924,8 @@ function generateQRWithShortUrl(shortUrl, qrCodeDiv, qrSection, qrDeleteBtn) {
             qrCodeDiv.innerHTML = '';
             new QRCode(qrCodeDiv, {
                 text: simpleUrl,
-                width: 200,
-                height: 200,
+                width: 228,
+                height: 228,
                 correctLevel: QRCode.CorrectLevel.L
             });
             
