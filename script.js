@@ -1805,25 +1805,13 @@ function generatePageQR() {
     
     // 고객용 URL 생성 (간단하게)
     const isDebugMode = new URLSearchParams(window.location.search).get('debug') === 'true';
-    // 현재 아파트 이름을 제목 또는 저장된 값에서 유추하여 슬러그 생성 (최대 64자)
-    const nameFromTitle = (localStorage.getItem('mainTitle') || '').replace(/ 통신 환경 개선 신청서$/, '');
-    const fallbackName = currentApartmentName || nameFromTitle || '아파트';
-    const nameSlug = fallbackName.trim()
-        .replace(/\s+/g, '-')
-        .replace(/[^\uAC00-\uD7A3a-zA-Z0-9\-]/g, '')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$|_/g, '')
-        .slice(0, 64);
+    // 한글 등 비ASCII가 포함된 슬러그는 QR 용량을 크게 만들 수 있으므로
+    // QR에는 항상 ID 기반 짧은 URL을 사용한다.
     const base = `${window.location.protocol}//hhofutures.store`;
-    // 기본: 슬러그 기반 고객 URL
-    let candidateUrl = isDebugMode
-        ? `${base}/#/${nameSlug}?mode=customer&apartment=${encodeURIComponent(APARTMENT_ID)}&debug=true`
-        : `${base}/#/${nameSlug}?mode=customer&apartment=${encodeURIComponent(APARTMENT_ID)}`;
-    // 길이 또는 비ASCII 확대로 인한 오버플로우 대비: ID 기반 짧은 URL 폴백
-    const idBasedUrl = isDebugMode
-        ? `${base}/#/${encodeURIComponent(APARTMENT_ID)}?mode=customer&apartment=${encodeURIComponent(APARTMENT_ID)}&debug=true`
-        : `${base}/#/${encodeURIComponent(APARTMENT_ID)}?mode=customer&apartment=${encodeURIComponent(APARTMENT_ID)}`;
-    const customerUrl = candidateUrl.length <= 300 ? candidateUrl : idBasedUrl;
+    const idForQR = getCurrentApartmentId();
+    const customerUrl = isDebugMode
+        ? `${base}/#/${encodeURIComponent(idForQR)}?mode=customer&debug=true`
+        : `${base}/#/${encodeURIComponent(idForQR)}?mode=customer`;
     
     console.log('QR 코드용 단순화된 URL:', customerUrl);
     console.log('URL 길이:', customerUrl.length, '자');
@@ -1831,8 +1819,7 @@ function generatePageQR() {
     // URL이 너무 긴 경우 더 단축 (보수적으로 300자 초과 시 단축)
     if (customerUrl.length > 300) {
         console.warn('URL이 너무 깁니다. 더 단축합니다.');
-        // 짧은 URL 사용: ID 기반으로 강제 축소
-        const shortUrl = idBasedUrl;
+        const shortUrl = `${base}/#/${encodeURIComponent(idForQR)}?mode=customer`;
         console.log('더 단축된 URL:', shortUrl, '길이:', shortUrl.length);
         return generateQRWithShortUrl(shortUrl, qrCodeDiv, qrSection, qrDeleteBtn);
     }
@@ -1848,8 +1835,8 @@ function generatePageQR() {
 
         new QRCode(qrCodeDiv, {
             text: customerUrl,
-            width: 256,
-            height: 256,
+            width: 192,
+            height: 192,
             colorDark: "#000000",
             colorLight: "#FFFFFF",
             // 최대로 여유 있게: 낮은 정정률(L)
