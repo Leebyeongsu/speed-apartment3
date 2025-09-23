@@ -1817,12 +1817,12 @@ function generatePageQR() {
     const base = `${window.location.protocol}//hhofutures.store`;
     // 기본: 슬러그 기반 고객 URL
     let candidateUrl = isDebugMode
-        ? `${base}/#/${nameSlug}?mode=customer&debug=true`
-        : `${base}/#/${nameSlug}?mode=customer`;
+        ? `${base}/#/${nameSlug}?mode=customer&apartment=${encodeURIComponent(APARTMENT_ID)}&debug=true`
+        : `${base}/#/${nameSlug}?mode=customer&apartment=${encodeURIComponent(APARTMENT_ID)}`;
     // 길이 또는 비ASCII 확대로 인한 오버플로우 대비: ID 기반 짧은 URL 폴백
     const idBasedUrl = isDebugMode
-        ? `${base}/#/${APARTMENT_ID}?mode=customer&debug=true`
-        : `${base}/#/${APARTMENT_ID}?mode=customer`;
+        ? `${base}/#/${encodeURIComponent(APARTMENT_ID)}?mode=customer&apartment=${encodeURIComponent(APARTMENT_ID)}&debug=true`
+        : `${base}/#/${encodeURIComponent(APARTMENT_ID)}?mode=customer&apartment=${encodeURIComponent(APARTMENT_ID)}`;
     const customerUrl = candidateUrl.length <= 300 ? candidateUrl : idBasedUrl;
     
     console.log('QR 코드용 단순화된 URL:', customerUrl);
