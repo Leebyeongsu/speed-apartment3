@@ -1782,9 +1782,44 @@ function closePhoneInputModal() {
     modal.style.display = 'none';
 }
 
+// QRCode 라이브러리 진단 함수
+function verifyQRCodeLibrary() {
+    try {
+        const info = {
+            hasQRCode: typeof window.QRCode !== 'undefined',
+            qrHead: typeof window.QRCode !== 'undefined' ? String(window.QRCode).slice(0, 120) : 'undefined',
+            correctLevels: (window.QRCode && window.QRCode.CorrectLevel) ? Object.keys(window.QRCode.CorrectLevel) : [],
+            scripts: Array.from(document.scripts).map(s => s.src).filter(src => /qrcode/i.test(src)),
+            resources: (performance && performance.getEntriesByType) ? performance.getEntriesByType('resource').map(r => r.name).filter(n => /qrcode/i.test(n)) : []
+        };
+        console.log('🧪 QRCode 라이브러리 검증:', info);
+
+        // 최소 생성 테스트
+        const probeDiv = document.createElement('div');
+        probeDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px';
+        document.body.appendChild(probeDiv);
+        try {
+            if (window.QRCode) {
+                new window.QRCode(probeDiv, { text: 'https://a.co', width: 64, height: 64, correctLevel: window.QRCode.CorrectLevel.L });
+                console.log('✅ QR 최소 생성 성공');
+            } else {
+                console.warn('⚠️ window.QRCode가 없습니다.');
+            }
+        } catch (e) {
+            console.error('❌ QR 최소 생성 실패:', e);
+        } finally {
+            setTimeout(() => probeDiv.remove(), 0);
+        }
+    } catch (e) {
+        console.warn('verifyQRCodeLibrary 예외:', e);
+    }
+}
+
 // QR 코드 생성
 function generatePageQR() {
     console.log('QR 코드 생성 시작');
+    // 라이브러리 진단
+    verifyQRCodeLibrary();
     
     const qrSection = document.getElementById('qrSection');
     const qrCodeDiv = document.getElementById('qrcode');
@@ -1833,16 +1868,38 @@ function generatePageQR() {
         const byteLen = encoder.encode(customerUrl).length;
         console.log('QR 텍스트 바이트 길이:', byteLen);
 
-        new QRCode(qrCodeDiv, {
-            text: customerUrl,
-            width: 192,
-            height: 192,
-            colorDark: "#000000",
-            colorLight: "#FFFFFF",
-            // 최대로 여유 있게: 낮은 정정률(L)
-            correctLevel: QRCode.CorrectLevel.L,
-            margin: 1
-        });
+        // 강제로 전역 QRCode를 바인딩하여 사용
+        const QR = window.QRCode;
+        if (!QR) {
+            throw new Error('QRCode 라이브러리를 찾을 수 없습니다.');
+        }
+
+        // 1차 시도
+        try {
+            new QR(qrCodeDiv, {
+                text: customerUrl,
+                width: 192,
+                height: 192,
+                colorDark: "#000000",
+                colorLight: "#FFFFFF",
+                correctLevel: QR.CorrectLevel.L,
+                margin: 1
+            });
+        } catch (firstErr) {
+            console.warn('⚠️ 1차 QR 생성 실패, 짧은 URL/작은 크기로 재시도:', firstErr);
+            // 2차 시도: 더 짧은 URL과 작은 사이즈
+            const shorter = `${base}/#/${encodeURIComponent(idForQR)}?mode=customer`;
+            qrCodeDiv.innerHTML = '';
+            new QR(qrCodeDiv, {
+                text: shorter,
+                width: 160,
+                height: 160,
+                colorDark: "#000000",
+                colorLight: "#FFFFFF",
+                correctLevel: QR.CorrectLevel.L,
+                margin: 1
+            });
+        }
         
         console.log('QR 코드 생성 완료');
         
