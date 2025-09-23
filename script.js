@@ -2892,7 +2892,13 @@ async function addNewApartment() {
 
     try {
         // 입력값 수집 및 검증
-        const apartmentName = document.getElementById('newApartmentName').value.trim();
+        const nameInputEl = document.getElementById('newApartmentName');
+        if (!nameInputEl) {
+            console.error('❌ newApartmentName 입력 요소를 찾을 수 없습니다.');
+            alert('❌ 입력 필드를 찾을 수 없습니다. 페이지를 새로고침 후 다시 시도해 주세요.');
+            return;
+        }
+        const apartmentName = (nameInputEl.value || '').trim();
         // 제목/부제목 입력 필드는 제거되었으므로 기본값을 코드에서 생성
         const apartmentTitle = '';
         const apartmentSubtitle = '';
