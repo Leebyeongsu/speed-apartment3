@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "supabase-apartment": {
+      "command": "node",
+      "args": ["mcp-server.js"],
+      "cwd": "."
+    }
+  }
+}

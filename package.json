@@ -1,0 +1,24 @@
+{
+  "name": "supabase-mcp-server",
+  "version": "1.0.0",
+  "description": "Supabase MCP Server for apartment application management",
+  "type": "module",
+  "main": "mcp-server.js",
+  "scripts": {
+    "start": "node mcp-server.js",
+    "dev": "node --watch mcp-server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "@modelcontextprotocol/sdk": "^0.4.0"
+  },
+  "keywords": [
+    "mcp",
+    "supabase",
+    "model-context-protocol",
+    "ai",
+    "apartment"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
