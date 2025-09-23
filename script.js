@@ -1845,8 +1845,8 @@ function generatePageQR() {
     const base = `${window.location.protocol}//hhofutures.store`;
     const idForQR = getCurrentApartmentId();
     const customerUrl = isDebugMode
-        ? `${base}/#/${encodeURIComponent(idForQR)}?mode=customer&debug=true`
-        : `${base}/#/${encodeURIComponent(idForQR)}?mode=customer`;
+        ? `${base}/?mode=customer&debug=true#/${encodeURIComponent(idForQR)}`
+        : `${base}/?mode=customer#/${encodeURIComponent(idForQR)}`;
     
     console.log('QR 코드용 단순화된 URL:', customerUrl);
     console.log('URL 길이:', customerUrl.length, '자');
@@ -1854,7 +1854,7 @@ function generatePageQR() {
     // URL이 너무 긴 경우 더 단축 (보수적으로 300자 초과 시 단축)
     if (customerUrl.length > 300) {
         console.warn('URL이 너무 깁니다. 더 단축합니다.');
-        const shortUrl = `${base}/#/${encodeURIComponent(idForQR)}?mode=customer`;
+        const shortUrl = `${base}/?mode=customer#/${encodeURIComponent(idForQR)}`;
         console.log('더 단축된 URL:', shortUrl, '길이:', shortUrl.length);
         return generateQRWithShortUrl(shortUrl, qrCodeDiv, qrSection, qrDeleteBtn);
     }
@@ -2200,8 +2200,19 @@ document.addEventListener('DOMContentLoaded', function() {
     optimizeForMobile();
     
     // URL 파라미터 확인하여 고객용/관리자용 모드 결정
+    // search와 hash(예: #/id?mode=customer) 모두에서 파라미터를 읽는다
+    function getParam(name) {
+        const v1 = new URLSearchParams(window.location.search).get(name);
+        if (v1) return v1;
+        const h = window.location.hash || '';
+        const q = h.indexOf('?');
+        if (q >= 0) {
+            return new URLSearchParams(h.slice(q + 1)).get(name);
+        }
+        return null;
+    }
+    const isCustomerMode = getParam('mode') === 'customer';
     const urlParams = new URLSearchParams(window.location.search);
-    const isCustomerMode = urlParams.get('mode') === 'customer';
 
     console.log('🔍 URL 파라미터 확인:', {
         currentURL: window.location.href,
