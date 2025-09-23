@@ -1805,27 +1805,29 @@ function generatePageQR() {
     
     // 고객용 URL 생성 (간단하게)
     const isDebugMode = new URLSearchParams(window.location.search).get('debug') === 'true';
-    // 현재 아파트 이름을 제목 또는 저장된 값에서 유추하여 슬러그 생성
+    // 현재 아파트 이름을 제목 또는 저장된 값에서 유추하여 슬러그 생성 (최대 64자)
     const nameFromTitle = (localStorage.getItem('mainTitle') || '').replace(/ 통신 환경 개선 신청서$/, '');
     const fallbackName = currentApartmentName || nameFromTitle || '아파트';
     const nameSlug = fallbackName.trim()
         .replace(/\s+/g, '-')
         .replace(/[^\uAC00-\uD7A3a-zA-Z0-9\-]/g, '')
         .replace(/-+/g, '-')
-        .replace(/^-|-$|_/g, '');
+        .replace(/^-|-$|_/g, '')
+        .slice(0, 64);
     const base = `${window.location.protocol}//hhofutures.store`;
-    const customerUrl = isDebugMode ? `${base}/#/${nameSlug}?debug=true&mode=customer` : `${base}/#/${nameSlug}?mode=customer`;
+    // 고객 모드 파라미터는 쿼리에 두고 슬러그는 해시에 둠 → 경량 URL
+    const customerUrl = isDebugMode ? `${base}/?debug=true&mode=customer#/${nameSlug}` : `${base}/?mode=customer#/${nameSlug}`;
     
     console.log('QR 코드용 단순화된 URL:', customerUrl);
     console.log('URL 길이:', customerUrl.length, '자');
     
-    // URL이 너무 긴 경우 더 단축
-    if (customerUrl.length > 800) {
+    // URL이 너무 긴 경우 더 단축 (보수적으로 300자 초과 시 단축)
+    if (customerUrl.length > 300) {
         console.warn('URL이 너무 깁니다. 더 단축합니다.');
-        // 짧은 URL 사용
+        // 짧은 URL 사용: 도메인 + 고객 모드, 슬러그는 해시 유지
         const shortUrl = isDebugMode ? 
-            `${window.location.protocol}//${window.location.host}${window.location.pathname}?debug=true&mode=customer` :
-            `${window.location.protocol}//${window.location.host}${window.location.pathname}?mode=customer`;
+            `${base}/?debug=true&mode=customer#/${nameSlug}` :
+            `${base}/?mode=customer#/${nameSlug}`;
         console.log('더 단축된 URL:', shortUrl, '길이:', shortUrl.length);
         return generateQRWithShortUrl(shortUrl, qrCodeDiv, qrSection, qrDeleteBtn);
     }
@@ -1840,7 +1842,8 @@ function generatePageQR() {
             height: 250,
             colorDark: "#000000",
             colorLight: "#FFFFFF",
-            correctLevel: QRCode.CorrectLevel.H,
+            // 길이 초과 방지 위해 기본 정정률을 M으로
+            correctLevel: QRCode.CorrectLevel.M,
             margin: 2
         });
         
@@ -1877,7 +1880,8 @@ function generateQRWithShortUrl(shortUrl, qrCodeDiv, qrSection, qrDeleteBtn) {
             height: 250,
             colorDark: "#000000",
             colorLight: "#FFFFFF",
-            correctLevel: QRCode.CorrectLevel.L, // 낮은 오류 수정 레벨로 변경
+            // 길이 안정성 우선: M
+            correctLevel: QRCode.CorrectLevel.M,
             margin: 2
         });
         
@@ -3117,7 +3121,7 @@ async function addNewApartment() {
             .replace(/^-|-$|_/g, '');
         const base = `${window.location.protocol}//hhofutures.store`;
         const newApartmentUrl = `${base}/#/${nameSlug}`;
-        const customerUrl = `${base}/#/${nameSlug}?mode=customer`;
+        const customerUrl = `${base}/?mode=customer#/${nameSlug}`;
 
         alert(`✅ ${apartmentName}이(가) 안전하게 생성되었습니다!\n\n` +
               `🔑 최종 ID: ${confirmedApartmentId}\n` +
