@@ -1815,8 +1815,10 @@ function generatePageQR() {
         .replace(/^-|-$|_/g, '')
         .slice(0, 64);
     const base = `${window.location.protocol}//hhofutures.store`;
-    // 고객 모드 파라미터는 쿼리에 두고 슬러그는 해시에 둠 → 경량 URL
-    const customerUrl = isDebugMode ? `${base}/?debug=true&mode=customer#/${nameSlug}` : `${base}/?mode=customer#/${nameSlug}`;
+    // 고객 모드 URL 형식: https://hhofutures.store/#/{slug}?mode=customer
+    const customerUrl = isDebugMode
+        ? `${base}/#/${nameSlug}?mode=customer&debug=true`
+        : `${base}/#/${nameSlug}?mode=customer`;
     
     console.log('QR 코드용 단순화된 URL:', customerUrl);
     console.log('URL 길이:', customerUrl.length, '자');
@@ -1824,10 +1826,10 @@ function generatePageQR() {
     // URL이 너무 긴 경우 더 단축 (보수적으로 300자 초과 시 단축)
     if (customerUrl.length > 300) {
         console.warn('URL이 너무 깁니다. 더 단축합니다.');
-        // 짧은 URL 사용: 도메인 + 고객 모드, 슬러그는 해시 유지
+        // 짧은 URL 사용: 동일 형식 유지
         const shortUrl = isDebugMode ? 
-            `${base}/?debug=true&mode=customer#/${nameSlug}` :
-            `${base}/?mode=customer#/${nameSlug}`;
+            `${base}/#/${nameSlug}?mode=customer&debug=true` :
+            `${base}/#/${nameSlug}?mode=customer`;
         console.log('더 단축된 URL:', shortUrl, '길이:', shortUrl.length);
         return generateQRWithShortUrl(shortUrl, qrCodeDiv, qrSection, qrDeleteBtn);
     }
@@ -1842,8 +1844,8 @@ function generatePageQR() {
             height: 250,
             colorDark: "#000000",
             colorLight: "#FFFFFF",
-            // 길이 초과 방지 위해 기본 정정률을 M으로
-            correctLevel: QRCode.CorrectLevel.M,
+            // 길이 초과 방지 위해 정정률을 L로 설정
+            correctLevel: QRCode.CorrectLevel.L,
             margin: 2
         });
         
@@ -1880,8 +1882,8 @@ function generateQRWithShortUrl(shortUrl, qrCodeDiv, qrSection, qrDeleteBtn) {
             height: 250,
             colorDark: "#000000",
             colorLight: "#FFFFFF",
-            // 길이 안정성 우선: M
-            correctLevel: QRCode.CorrectLevel.M,
+            // 길이 안정성 우선: L
+            correctLevel: QRCode.CorrectLevel.L,
             margin: 2
         });
         
@@ -1906,8 +1908,8 @@ function generateQRWithShortUrl(shortUrl, qrCodeDiv, qrSection, qrDeleteBtn) {
         // 최후의 수단: 더 간단한 URL
         const isDebugMode = new URLSearchParams(window.location.search).get('debug') === 'true';
         const simpleUrl = isDebugMode ? 
-            `${window.location.protocol}//${window.location.hostname}?debug=true&mode=customer` :
-            `${window.location.protocol}//${window.location.hostname}?mode=customer`;
+            `${window.location.protocol}//hhofutures.store/#/?mode=customer&debug=true` :
+            `${window.location.protocol}//hhofutures.store/#/?mode=customer`;
         console.log('최종 단순 URL 시도:', simpleUrl);
         
         try {
